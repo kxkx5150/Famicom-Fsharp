@@ -6,6 +6,12 @@
 
   <ItemGroup>
     <Compile Include="Rom.fs" />
+    <Compile Include="Cpu.fs" />
+    <Compile Include="instructions.fs" />
     <Compile Include="Nes.fs" />
+
+
+
+    
   </ItemGroup>
 </Project>

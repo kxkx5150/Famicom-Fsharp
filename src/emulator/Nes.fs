@@ -1,6 +1,7 @@
 module NES
 
 open ROM
+open CPU
 
 
 type NesComponents = { Rom: Rom }
