@@ -1,10 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Emulator.fs" />
+    <Compile Include="Rom.fs" />
+    <Compile Include="Nes.fs" />
   </ItemGroup>
 </Project>
