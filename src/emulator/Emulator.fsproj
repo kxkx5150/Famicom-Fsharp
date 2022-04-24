@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <Compile Include="Rom.fs" />
+    <Compile Include="Mapper.fs" />
     <Compile Include="instructions.fs" />
     <Compile Include="Mem.fs" />
     <Compile Include="Cpu.fs" />
