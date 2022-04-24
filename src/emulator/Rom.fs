@@ -19,7 +19,7 @@ type RomComponentsom =
       ram: byte array }
 
 
-type Rom(path: string) =
+type Rom() =
     member this.setRom(path: string) =
         let romData = path |> File.ReadAllBytes
         let headers = this.load_headers romData

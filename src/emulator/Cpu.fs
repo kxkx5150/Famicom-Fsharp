@@ -112,26 +112,25 @@ let pop_word cpu =
     (hi <<< 8) ||| lo
 
 let flags_to_int cpu =
-    let p = ref Flags.break5 in
+    let mutable p = Flags.break5 in
 
     if cpu.negative then
-        p := !p ||| Flags.negative
+        p <- p ||| Flags.negative
 
     if cpu.overflow then
-        p := !p ||| Flags.overflow
+        p <- p ||| Flags.overflow
 
     if cpu.decimal then
-        p := !p ||| Flags.decimal
+        p <- p ||| Flags.decimal
 
     if cpu.interrupt then
-        p := !p ||| Flags.interrupt
+        p <- p ||| Flags.interrupt
 
-    if cpu.zero then p := !p ||| Flags.zero
+    if cpu.zero then p <- p ||| Flags.zero
 
-    if cpu.carry then
-        p := !p ||| Flags.carry
+    if cpu.carry then p <- p ||| Flags.carry
 
-    !p
+    p
 
 let page_crossed a b = (a &&& 0xFF00) <> (b &&& 0xFF00)
 
@@ -631,21 +630,39 @@ let execute_instruction cpu instruction =
     | TXS -> txs cpu
     | TYA -> tya cpu
 
-// let decode_instruction cpu instruction =
-//   let (op, mode, cycles, extra_page_cycles) = decode instruction
-//   let (laz_args, target, size) = decode_addressing_mode cpu mode extra_page_cycles
-//   let args = if do_read op || cpu.nestest then Lazy.force laz_args else 0x1337
-//   { op = op; mode = mode; cycles = cycles; args = args; target = target; size = size + 1 }
+let decode_instruction cpu instruction =
+    let (op, mode, cycles, extra_page_cycles) = decode instruction
+    let (laz_args, target, size) = decode_addressing_mode cpu mode extra_page_cycles
 
-// let step ~trace_fun ~on_step cpu =
-//   if cpu.nmi_triggered then nmi cpu;
-//   let opcode = load_byte cpu cpu.pc in
-//   let instruction = decode_instruction cpu opcode in
-//   let log = if cpu.tracing then Some (trace_fun cpu instruction opcode) else None in
-//   on_step instruction opcode;
-//   cpu.pc <- cpu.pc + instruction.size;
-//   execute_instruction cpu instruction;
-//   cpu.cycles <- cpu.cycles + instruction.cycles + cpu.extra_cycles;
-//   cpu.extra_cycles <- 0;
-//   cpu.steps <- cpu.steps + 1;
-//   log
+    let args =
+        if do_read op || cpu.nestest then
+            laz_args.Force()
+        else
+            0x1337
+
+    { op = op
+      mode = mode
+      cycles = cycles
+      args = args
+      target = target
+      size = size + 1 }
+
+let step trace_fun on_step cpu =
+    if cpu.nmi_triggered then nmi cpu
+    let opcode = load_byte cpu cpu.pc in
+    let instruction = decode_instruction cpu opcode in
+
+    let log =
+        if cpu.tracing then
+            Some(trace_fun cpu instruction opcode)
+        else
+            None in
+
+    on_step instruction opcode
+    cpu.pc <- cpu.pc + instruction.size
+    execute_instruction cpu instruction
+    cpu.cycles <- cpu.cycles + instruction.cycles + cpu.extra_cycles
+    cpu.extra_cycles <- 0
+    cpu.steps <- cpu.steps + 1
+    log
+

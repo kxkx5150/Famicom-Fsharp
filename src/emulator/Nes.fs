@@ -7,7 +7,7 @@ open CPU
 type NesComponents = { Rom: Rom }
 type Nes() =
 
-    let rom = new Rom("nestest.nes")
+    let rom = new Rom()
     let rc = rom.setRom "nestest.nes"
     
     member this.romc = rc
