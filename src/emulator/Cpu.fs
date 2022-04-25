@@ -567,7 +567,6 @@ let decode opcode =
     | 0xFE -> (INC, AddressingMode.AbsoluteX, 7, 0)
     | _ -> failwith (sprintf "Unknown opcode %02X" opcode)
 
-
 let execute_instruction cpu instruction =
     let args = instruction.args in
     let target = instruction.target in
@@ -647,14 +646,15 @@ let decode_instruction cpu instruction =
       target = target
       size = size + 1 }
 
-let step cpu =
+let step cpu trace =
     if cpu.nmi_triggered then nmi cpu
     let opcode = load_byte cpu cpu.pc
     let instruction = decode_instruction cpu opcode
+
+    trace cpu instruction opcode
 
     cpu.pc <- cpu.pc + instruction.size
     execute_instruction cpu instruction
     cpu.cycles <- cpu.cycles + instruction.cycles + cpu.extra_cycles
     cpu.extra_cycles <- 0
     cpu.steps <- cpu.steps + 1
-

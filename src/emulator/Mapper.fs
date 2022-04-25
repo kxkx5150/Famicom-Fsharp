@@ -7,7 +7,7 @@ type t =
       load: int -> byte
       store: int -> byte -> unit }
 
-module NRom = begin 
+module NRom =
     let load (rom: ROM.RomComponentsom) address =
         if address < 0x2000 then
             rom.chr.[address]
@@ -28,7 +28,6 @@ module NRom = begin
         { rom = rom
           load = load rom
           store = store rom }
-end
 
 
 let mapper_for (rom: ROM.RomComponentsom) =
