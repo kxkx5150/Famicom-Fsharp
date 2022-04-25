@@ -11,7 +11,7 @@ let main argv =
     Application.SetCompatibleTextRenderingDefault false
 
     use newwindow = new NESWindow()
-    newwindow.initNES
+    newwindow.initNES true
     newwindow.mainLoop
 
     Application.Run(newwindow)

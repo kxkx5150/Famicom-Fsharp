@@ -646,6 +646,14 @@ let decode_instruction cpu instruction =
       target = target
       size = size + 1 }
 
+let init cpu test = 
+    if test then
+        printfn "init cpu test"
+        cpu.pc <- 0xC000
+        printfn "init cpu test"
+    else
+        printfn "init cpu"
+
 let step cpu trace =
     if cpu.nmi_triggered then nmi cpu
     let opcode = load_byte cpu cpu.pc

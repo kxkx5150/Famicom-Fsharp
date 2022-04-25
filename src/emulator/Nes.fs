@@ -35,6 +35,9 @@ type Nes() =
 
     member this.setRom(path: string) = printfn "Loaded %s\n" path
 
+    member this.init test =
+        CPU.init this.cpu test
+
     member this.loop =
         for i in 0..9 do
             CPU.step this.cpu trace
