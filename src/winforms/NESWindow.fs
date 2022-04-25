@@ -9,10 +9,17 @@ open NES
 type NESWindow() as this =
     inherit Form()
     do this.ClientSize <- Size(256, 240)
+    member this.nes = new Nes()
 
-    let nes = new Nes()
+    member this.initNES = 
+        printfn "initNes\n"
 
-    member this.setRom(path: string) = nes.setRom path
+    member this.mainLoop = 
+        this.nes.step 
+        printfn "mainLoop\n"
+
+
+
     override this.OnFormClosing args = base.OnFormClosing args
     override this.OnShown args = base.OnShown args
     member this.ShowError(ex: exn) =

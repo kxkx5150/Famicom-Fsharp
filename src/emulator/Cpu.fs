@@ -647,22 +647,14 @@ let decode_instruction cpu instruction =
       target = target
       size = size + 1 }
 
-let step trace_fun on_step cpu =
+let step cpu =
     if cpu.nmi_triggered then nmi cpu
-    let opcode = load_byte cpu cpu.pc in
-    let instruction = decode_instruction cpu opcode in
+    let opcode = load_byte cpu cpu.pc
+    let instruction = decode_instruction cpu opcode
 
-    let log =
-        if cpu.tracing then
-            Some(trace_fun cpu instruction opcode)
-        else
-            None in
-
-    on_step instruction opcode
     cpu.pc <- cpu.pc + instruction.size
     execute_instruction cpu instruction
     cpu.cycles <- cpu.cycles + instruction.cycles + cpu.extra_cycles
     cpu.extra_cycles <- 0
     cpu.steps <- cpu.steps + 1
-    log
 

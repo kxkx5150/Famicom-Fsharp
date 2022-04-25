@@ -28,9 +28,10 @@ type Rom() =
             romData[(0x10 + headers.prg_size) .. (0x10 + headers.prg_size + headers.chr_size)]
 
         let prg = romData[0x10 .. (0x10 + headers.prg_size)]
-        let ram: int array = Array.zeroCreate 0x2000
+        let ram: byte array = Array.zeroCreate 0x2000
         printfn "Loaded rom %s\n" path
-        (headers, chr, prg, ram)
+        { headers = headers; prg = prg; chr = chr; ram = ram}
+
 
     member this.load_headers(rom: byte array) =
         { prg_size = int rom.[4] * 0x4000
