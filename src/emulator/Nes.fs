@@ -6,9 +6,7 @@ open MEM
 open CPU
 
 let trace (cpu: CPU.t) instruction opcode =
-    let cy = cpu.cycles * 3 % 341 in
     let str_op = instruction.op.ToString()
-
     printfn
         "%04X %s    A:%02X X:%02X Y:%02X P:%02X SP:%02X    CYC:%4d"
         cpu.pc
@@ -32,5 +30,5 @@ type Nes() =
 
     member this.loopNes =
         let pcval = CPU.init  &lcpu true
-        for i in 0..2000 do
+        for i in 0..5576 do
             CPU.stepCpu &lcpu trace

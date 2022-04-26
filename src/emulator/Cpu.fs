@@ -376,6 +376,26 @@ let rti cpu =
     plp cpu
     cpu.pc <- pop_word cpu
 
+
+let lax c args =
+    c.x <- set_nz_flags c args
+    c.a <- c.x
+
+let sax c args =
+    store_byte c args (c.a &&& c.x)
+
+
+
+
+
+
+
+
+
+
+
+
+
 let nmi cpu =
     push_word cpu cpu.pc
     let flags = flags_to_int cpu in
@@ -487,9 +507,13 @@ let decode opcode =
     | 0x7D -> (ADC, AddressingMode.AbsoluteX, 4, 0)
     | 0x7E -> (ROR, AddressingMode.AbsoluteX, 7, 0)
     | 0x81 -> (STA, AddressingMode.IndirectX, 6, 0)
+    | 0x83 -> (SAX, AddressingMode.IndirectX, 6, 0)
+
     | 0x84 -> (STY, AddressingMode.ZeroPage, 3, 0)
     | 0x85 -> (STA, AddressingMode.ZeroPage, 3, 0)
     | 0x86 -> (STX, AddressingMode.ZeroPage, 3, 0)
+    // | 0x87 -> (SAX, AddressingMode.ZeroPage, 3, 0)
+
     | 0x88 -> (DEY, AddressingMode.Implicit, 2, 0)
     | 0x8A -> (TXA, AddressingMode.Implicit, 2, 0)
     | 0x8C -> (STY, AddressingMode.Absolute, 4, 0)
@@ -507,26 +531,38 @@ let decode opcode =
     | 0xA0 -> (LDY, AddressingMode.Immediate, 2, 0)
     | 0xA1 -> (LDA, AddressingMode.IndirectX, 6, 0)
     | 0xA2 -> (LDX, AddressingMode.Immediate, 2, 0)
+    | 0xA3 -> (LAX, AddressingMode.IndirectX, 6, 0)
+
     | 0xA4 -> (LDY, AddressingMode.ZeroPage, 3, 0)
     | 0xA5 -> (LDA, AddressingMode.ZeroPage, 3, 0)
     | 0xA6 -> (LDX, AddressingMode.ZeroPage, 3, 0)
+    | 0xA7 -> (LAX, AddressingMode.ZeroPage, 3, 0)
+
     | 0xA9 -> (LDA, AddressingMode.Immediate, 2, 0)
     | 0xA8 -> (TAY, AddressingMode.Implicit, 2, 0)
     | 0xAA -> (TAX, AddressingMode.Implicit, 2, 0)
     | 0xAC -> (LDY, AddressingMode.Absolute, 4, 0)
     | 0xAD -> (LDA, AddressingMode.Absolute, 4, 0)
     | 0xAE -> (LDX, AddressingMode.Absolute, 4, 0)
+    | 0xAF -> (LAX, AddressingMode.Absolute, 4, 0)
+
     | 0xB0 -> (BCS, AddressingMode.Relative, 2, 1)
     | 0xB1 -> (LDA, AddressingMode.IndirectY, 5, 1)
+    | 0xB3 -> (LAX, AddressingMode.IndirectY, 5, 0)
+
     | 0xB4 -> (LDY, AddressingMode.ZeroPageX, 4, 0)
     | 0xB5 -> (LDA, AddressingMode.ZeroPageX, 4, 0)
     | 0xB6 -> (LDX, AddressingMode.ZeroPageY, 4, 0)
+    | 0xB7 -> (LAX, AddressingMode.ZeroPageY, 4, 0)
+
     | 0xB8 -> (CLV, AddressingMode.Implicit, 2, 0)
     | 0xB9 -> (LDA, AddressingMode.AbsoluteY, 4, 1)
     | 0xBA -> (TSX, AddressingMode.Implicit, 2, 0)
     | 0xBD -> (LDA, AddressingMode.AbsoluteX, 4, 1)
     | 0xBC -> (LDY, AddressingMode.AbsoluteX, 4, 1)
     | 0xBE -> (LDX, AddressingMode.AbsoluteY, 4, 1)
+    | 0xBF -> (LAX, AddressingMode.AbsoluteY, 4, 1)
+
     | 0xC0 -> (CPY, AddressingMode.Immediate, 2, 0)
     | 0xC1 -> (CMP, AddressingMode.IndirectX, 6, 0)
     | 0xC4 -> (CPY, AddressingMode.ZeroPage, 3, 0)
@@ -629,6 +665,10 @@ let execute_instruction cpu instruction =
     | TXA -> txa cpu
     | TXS -> txs cpu
     | TYA -> tya cpu
+    // undocumented opcodes
+    | LAX -> lax cpu args
+    | SAX -> sax cpu args
+
 
 let decode_instruction cpu instruction =
     let (op, mode, cycles, extra_page_cycles) = decode instruction

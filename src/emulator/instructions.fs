@@ -57,3 +57,6 @@ type t =
     | TXA
     | TXS
     | TYA
+    // undocumented opcodes
+    | LAX
+    | SAX
