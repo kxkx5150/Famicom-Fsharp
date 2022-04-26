@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="log.fs" />
     <Compile Include="Rom.fs" />
     <Compile Include="Mapper.fs" />
     <Compile Include="Mem.fs" />

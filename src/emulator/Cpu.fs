@@ -230,7 +230,7 @@ let write_target cpu target value =
 
 let set_nz_flags cpu value =
     cpu.zero <- value = 0
-    cpu.negative <- value &&& 0x80 <> 0
+    cpu.negative <- (value &&& 0x80) <> 0
     value
 
 let tax c = c.x <- set_nz_flags c c.a
@@ -377,9 +377,15 @@ let rti cpu =
     cpu.pc <- pop_word cpu
 
 
+
+
+
+
+
+
 let lax c args =
-    c.x <- set_nz_flags c args
-    c.a <- c.x
+    c.a <- load_byte c args
+    c.x <- set_nz_flags c c.a
 
 let sax c args =
     store_byte c args (c.a &&& c.x)
