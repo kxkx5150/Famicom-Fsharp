@@ -11,18 +11,12 @@ type NESWindow() as this =
     do this.ClientSize <- Size(256, 240)
     member this.nes = new Nes()
 
-    member this.initNES test = 
-        printfn "init nes"
-        this.nes.init test
-
     member this.mainLoop = 
-        printfn "start loop"
-        this.nes.loop
+        printfn "start window loop"
+        this.nes.loopNes
 
     override this.OnFormClosing args = base.OnFormClosing args
-
     override this.OnShown args = base.OnShown args
-
     member this.ShowError(ex: exn) =
         printfn "error %s\n" Resource.title
 

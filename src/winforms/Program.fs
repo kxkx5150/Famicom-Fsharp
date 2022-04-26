@@ -9,10 +9,7 @@ open NESWindow
 let main argv =
     Application.EnableVisualStyles()
     Application.SetCompatibleTextRenderingDefault false
-
     use newwindow = new NESWindow()
-    newwindow.initNES true
     newwindow.mainLoop
-
     Application.Run(newwindow)
     0

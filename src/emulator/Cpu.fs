@@ -71,13 +71,12 @@ let store_byte cpu address value =
             cpu.extra_cycles
             + 513
             + System.Convert.ToInt32(cpu.cycles % 2 = 1)
-
     MEM.store cpu.memory address value
 
 let load_word cpu address =
     let a = load_byte cpu address in
     let b = load_byte cpu (address + 1) in
-    a ||| b <<< 8
+    a ||| (b <<< 8)
 
 let load_word_zero_page cpu address =
     let a =
@@ -86,7 +85,7 @@ let load_word_zero_page cpu address =
 
     let lo = load_byte cpu address in
     let hi = load_byte cpu a in
-    lo ||| hi <<< 8
+    lo ||| (hi <<< 8)
 
 let store_word cpu address value =
     let lo = value &&& 0xFF in
@@ -163,7 +162,9 @@ let decode_addressing_mode cpu am extra_page_cycles =
 
     match am with
     | AddressingMode.Immediate -> (lazy (load_byte cpu pc), Some pc, 1)
-    | AddressingMode.Absolute -> let address = load_word cpu pc in (lazy (load_byte cpu address), Some address, 2)
+    | AddressingMode.Absolute -> 
+        let address = load_word cpu pc in
+        (lazy (load_byte cpu address), Some address, 2)
     | AddressingMode.AbsoluteX ->
         let arg = load_word cpu pc in
         let address = wrapping_add_w arg cpu.x in
@@ -631,6 +632,7 @@ let execute_instruction cpu instruction =
 
 let decode_instruction cpu instruction =
     let (op, mode, cycles, extra_page_cycles) = decode instruction
+
     let (laz_args, target, size) = decode_addressing_mode cpu mode extra_page_cycles
 
     let args =
@@ -646,19 +648,18 @@ let decode_instruction cpu instruction =
       target = target
       size = size + 1 }
 
-let init cpu test = 
+let init (cpu: byref<t>) test = 
     if test then
-        printfn "init cpu test"
         cpu.pc <- 0xC000
         printfn "init cpu test"
     else
         printfn "init cpu"
+    &cpu
 
-let step cpu trace =
+let stepCpu (cpu: byref<t>) trace =
     if cpu.nmi_triggered then nmi cpu
     let opcode = load_byte cpu cpu.pc
     let instruction = decode_instruction cpu opcode
-
     trace cpu instruction opcode
 
     cpu.pc <- cpu.pc + instruction.size

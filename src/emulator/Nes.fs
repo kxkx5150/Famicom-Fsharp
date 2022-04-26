@@ -10,7 +10,7 @@ let trace (cpu: CPU.t) instruction opcode =
     let str_op = instruction.op.ToString()
 
     printfn
-        "%04X %s    A:%02X X:%02X Y:%02X P:%02X SP:%02X    CYC:%3d"
+        "%04X %s    A:%02X X:%02X Y:%02X P:%02X SP:%02X    CYC:%4d"
         cpu.pc
         str_op
         cpu.a
@@ -18,7 +18,7 @@ let trace (cpu: CPU.t) instruction opcode =
         cpu.y
         (CPU.flags_to_int cpu)
         cpu.s
-        cy
+        cpu.cycles
 
 type Nes() =
 
@@ -26,18 +26,11 @@ type Nes() =
     let lromcop = rom.setRom "nestest.nes"
     let lmappr = Mapper.mapper_for lromcop
     let lmem = MEM.makeRam (lmappr)
-    let lcpu = CPU.make false false lmem
-
-    member this.romc = lromcop
-    member this.mapper = lmappr
-    member this.mem = lmem
-    member this.cpu = lcpu
+    let mutable lcpu = CPU.make true true lmem
 
     member this.setRom(path: string) = printfn "Loaded %s\n" path
 
-    member this.init test =
-        CPU.init this.cpu test
-
-    member this.loop =
-        for i in 0..9 do
-            CPU.step this.cpu trace
+    member this.loopNes =
+        let pcval = CPU.init  &lcpu true
+        for i in 0..2000 do
+            CPU.stepCpu &lcpu trace
