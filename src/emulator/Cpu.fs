@@ -184,7 +184,7 @@ let nmi cpu =
     cpu.interrupt <- true
     cpu.pc <- load_word cpu 0xFFFA
 
-let decode_addressing_mode cpu am extra_page_cycles =
+let get_addr cpu am extra_page_cycles =
     let pc = cpu.pc + 1
 
     match am with
@@ -244,7 +244,7 @@ let decode_addressing_mode cpu am extra_page_cycles =
     | AddressingMode.Accumulator -> (lazy (cpu.a), None, 0)
     | AddressingMode.Implicit -> (lazy 0, None, 0)
 
-let execute_instruction cpu instruction =
+let exe_instruction cpu instruction =
     let args = instruction.args in
     let target = instruction.target in
 
@@ -438,7 +438,7 @@ let execute_instruction cpu instruction =
 let decode_instruction cpu instruction =
     let (op, mode, cycles, extra_page_cycles) = decode instruction
 
-    let (laz_args, target, size) = decode_addressing_mode cpu mode extra_page_cycles
+    let (laz_args, target, size) = get_addr cpu mode extra_page_cycles
 
     let args =
         if do_read op || cpu.nestest then
@@ -469,7 +469,7 @@ let stepCpu (cpu: byref<t>) trace =
     trace cpu instruction opcode
 
     cpu.pc <- cpu.pc + instruction.size
-    execute_instruction cpu instruction
+    exe_instruction cpu instruction
     cpu.cycles <- cpu.cycles + instruction.cycles + cpu.extra_cycles
     cpu.extra_cycles <- 0
     cpu.steps <- cpu.steps + 1

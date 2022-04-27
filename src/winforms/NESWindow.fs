@@ -9,11 +9,12 @@ open NES
 type NESWindow() as this =
     inherit Form()
     do this.ClientSize <- Size(256, 240)
-    member this.nes = new Nes()
+    let nes = new Nes()
+
 
     member this.mainLoop = 
         printfn "start window loop"
-        this.nes.runNesTest
+        // nes.runNesTest
 
     override this.OnFormClosing args = base.OnFormClosing args
     override this.OnShown args = base.OnShown args
