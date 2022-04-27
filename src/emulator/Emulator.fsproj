@@ -12,9 +12,5 @@
     <Compile Include="instructions.fs" />
     <Compile Include="Cpu.fs" />
     <Compile Include="Nes.fs" />
-
-
-
-    
   </ItemGroup>
 </Project>

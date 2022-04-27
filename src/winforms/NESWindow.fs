@@ -13,7 +13,7 @@ type NESWindow() as this =
 
     member this.mainLoop = 
         printfn "start window loop"
-        this.nes.loopNes
+        this.nes.runNesTest
 
     override this.OnFormClosing args = base.OnFormClosing args
     override this.OnShown args = base.OnShown args
