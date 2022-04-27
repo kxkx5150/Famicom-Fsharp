@@ -148,6 +148,42 @@ let do_read =
     | STY -> false
     | _ -> true
 
+let write_target cpu target value =
+    match target with
+    | None -> cpu.a <- value
+    | Some addr -> store_byte cpu addr value
+
+let set_nz_flags cpu value =
+    cpu.zero <- value = 0
+    cpu.negative <- (value &&& 0x80) <> 0
+    value
+
+let branch cpu addr cond =
+    if cond then
+        let cycles =
+            if page_crossed addr cpu.pc then
+                2
+            else
+                1 in
+
+        cpu.extra_cycles <- cpu.extra_cycles + cycles
+        cpu.pc <- addr
+
+let compare_op cpu a b =
+    let result = wrapping_sub a b in
+    cpu.carry <- a >= b
+    cpu.zero <- a = b
+    cpu.negative <- result > 127
+
+let nmi cpu =
+    push_word cpu cpu.pc
+    let flags = flags_to_int cpu in
+    push_byte cpu flags
+    cpu.nmi_triggered <- false
+    cpu.cycles <- cpu.cycles + 7
+    cpu.interrupt <- true
+    cpu.pc <- load_word cpu 0xFFFA
+
 let decode_addressing_mode cpu am extra_page_cycles =
     let pc = cpu.pc + 1
 
@@ -208,329 +244,196 @@ let decode_addressing_mode cpu am extra_page_cycles =
     | AddressingMode.Accumulator -> (lazy (cpu.a), None, 0)
     | AddressingMode.Implicit -> (lazy 0, None, 0)
 
-let write_target cpu target value =
-    match target with
-    | None -> cpu.a <- value
-    | Some addr -> store_byte cpu addr value
-
-let set_nz_flags cpu value =
-    cpu.zero <- value = 0
-    cpu.negative <- (value &&& 0x80) <> 0
-    value
-
-
-
-
-
-
-let tax c = c.x <- set_nz_flags c c.a
-let txa c = c.a <- set_nz_flags c c.x
-let tay c = c.y <- set_nz_flags c c.a
-let tya c = c.a <- set_nz_flags c c.y
-
-let txs c =
-    c.s <- c.x (* Not a bug. TXS is the only transfer that doesn't change NZ *)
-
-let tsx c = c.x <- set_nz_flags c c.s
-
-let inc cpu args target =
-    let result = wrapping_add args 1 in write_target cpu target (set_nz_flags cpu result)
-
-let dec cpu args target =
-    let result = wrapping_sub args 1 in write_target cpu target (set_nz_flags cpu result)
-
-let dex c =
-    c.x <- set_nz_flags c (wrapping_sub c.x 1)
-
-let dey c =
-    c.y <- set_nz_flags c (wrapping_sub c.y 1)
-
-let inx c =
-    c.x <- set_nz_flags c (wrapping_add c.x 1)
-
-let iny c =
-    c.y <- set_nz_flags c (wrapping_add c.y 1)
-
-let sta c addr = store_byte c addr c.a
-let stx c addr = store_byte c addr c.x
-let sty c addr = store_byte c addr c.y
-let lda c args = c.a <- set_nz_flags c args
-let ldx c args = c.x <- set_nz_flags c args
-let ldy c args = c.y <- set_nz_flags c args
-
-let jmp cpu target = cpu.pc <- target
-
-let brk cpu =
-    push_word cpu (cpu.pc + 1)
-    push_byte cpu ((flags_to_int cpu) ||| Flags.break4)
-    cpu.interrupt <- true
-    cpu.pc <- load_word cpu 0xFFFE
-
-let branch cpu addr cond =
-    if cond then
-        let cycles =
-            if page_crossed addr cpu.pc then
-                2
-            else
-                1 in
-
-        cpu.extra_cycles <- cpu.extra_cycles + cycles
-        cpu.pc <- addr
-
-let bcs cpu offset = branch cpu offset cpu.carry
-let bcc cpu offset = branch cpu offset (not cpu.carry)
-let beq cpu offset = branch cpu offset cpu.zero
-let bne cpu offset = branch cpu offset (not cpu.zero)
-let bmi cpu offset = branch cpu offset cpu.negative
-let bpl cpu offset = branch cpu offset (not cpu.negative)
-let bvs cpu offset = branch cpu offset cpu.overflow
-let bvc cpu offset = branch cpu offset (not cpu.overflow)
-
-let bit cpu byte =
-    cpu.zero <- (cpu.a &&& byte) = 0
-    cpu.overflow <- byte &&& Flags.overflow <> 0
-    cpu.negative <- byte &&& Flags.negative <> 0
-
-let php cpu =
-    let flags = (flags_to_int cpu) ||| Flags.break4 in push_byte cpu flags
-
-let plp cpu =
-    let flags = pop_byte cpu in
-    cpu.carry <- flags &&& Flags.carry > 0
-    cpu.zero <- flags &&& Flags.zero > 0
-    cpu.interrupt <- flags &&& Flags.interrupt > 0
-    cpu.decimal <- flags &&& Flags.decimal > 0
-    cpu.overflow <- flags &&& Flags.overflow > 0
-    cpu.negative <- flags &&& Flags.negative > 0
-
-let pla cpu =
-    cpu.a <- set_nz_flags cpu (pop_byte cpu)
-
-let and_op cpu args =
-    cpu.a <- set_nz_flags cpu (cpu.a &&& args)
-
-let ora cpu args =
-    cpu.a <- set_nz_flags cpu (cpu.a ||| args)
-
-let eor cpu args =
-    cpu.a <- set_nz_flags cpu (cpu.a ^^^ args)
-
-let lsr_op cpu args target =
-    cpu.carry <- args &&& 1 > 0
-    let result = set_nz_flags cpu (args >>> 1) in
-    write_target cpu target result
-
-let asl_op cpu args target =
-    cpu.carry <- args &&& 0x80 > 0
-    let result = set_nz_flags cpu ((args <<< 1) &&& 0xFF) in
-    write_target cpu target result
-
-let ror cpu args target =
-    let carry = if cpu.carry then 1 else 0 in
-    cpu.carry <- args &&& 1 = 1
-    let result = (args >>> 1) ||| (carry <<< 7) in
-    write_target cpu target (set_nz_flags cpu result)
-
-let rol cpu args target =
-    let carry = if cpu.carry then 1 else 0 in
-    cpu.carry <- args &&& 0x80 > 0
-    let result = ((args <<< 1) ||| carry) &&& 0xFF in
-    write_target cpu target (set_nz_flags cpu result)
-
-let compare_op cpu a b =
-    let result = wrapping_sub a b in
-    cpu.carry <- a >= b
-    cpu.zero <- a = b
-    cpu.negative <- result > 127
-
-let cmp cpu args = compare_op cpu cpu.a args
-let cpx cpu args = compare_op cpu cpu.x args
-let cpy cpu args = compare_op cpu cpu.y args
-
-let adc cpu args =
-    let sum = cpu.a + args + System.Convert.ToInt32(cpu.carry) in
-    cpu.carry <- sum > 0xFF
-    (* Oh boy... *)
-    cpu.overflow <- (~~~(cpu.a ^^^ args)) &&& (cpu.a ^^^ sum) &&& 0x80 > 0
-    cpu.a <- set_nz_flags cpu (sum % 0x100)
-
-let sbc cpu args = adc cpu (args ^^^ 0xFF)
-
-let jsr cpu address =
-    push_word cpu (wrapping_sub_w cpu.pc 1)
-    cpu.pc <- address
-
-let rts cpu = cpu.pc <- (pop_word cpu) + 1
-
-let rti cpu =
-    plp cpu
-    cpu.pc <- pop_word cpu
-
-// undocumented opcodes
-
-let lax c args =
-    c.a <- args
-    c.x <- set_nz_flags c c.a
-
-let sax c args = store_byte c args (c.a &&& c.x)
-
-let dcp c args addr =
-    let mutable dat = if args = 0 then 0xff else args - 1
-
-    let value = (dat &&& 0xff)
-    store_byte c addr value
-    let value2 = (value ^^^ 0xff)
-
-    let result = c.a + value2 + 1
-    c.carry <- (result > 0xff)
-    let _ = set_nz_flags c (result &&& 0xff)
-    ()
-
-let isb c args addr =
-    let mutable dat = if args = 0xff then 0 else args + 1
-
-    let value = (dat &&& 0xff)
-    store_byte c addr value
-    let value2 = (value ^^^ 0xff)
-
-    let result = c.a + value2 + if c.carry then 1 else 0
-    c.carry <- (result > 0xff)
-
-    c.overflow <-
-        ((c.a &&& 0x80) = (value2 &&& 0x80))
-        && ((value2 &&& 0x80) <> ((result &&& 0x80)))
-
-    c.a <- (result &&& 0xff)
-    let _ = set_nz_flags c (c.a &&& 0xff)
-    ()
-
-let slo c args addr =
-    let res = (args <<< 1)
-    c.carry <- (res > 0xff)
-    let result = (res &&& 0xff)
-
-    store_byte c addr result
-    c.a <- (c.a ||| result)
-    let _ = set_nz_flags c (c.a &&& 0xff)
-    ()
-
-let rla c args addr =
-    let res = ((args <<< 1) ||| (if c.carry then 1 else 0))
-    c.carry <- (res > 0xff)
-    let result = (res &&& 0xff)
-    store_byte c addr result
-    c.a <- (c.a &&& result)
-    let _ = set_nz_flags c (c.a &&& 0xff)
-    ()
-
-let sre c args addr =
-    let carry = args &&& 0x1
-    let result = args >>> 1
-    c.carry <- carry > 0
-    store_byte c addr result
-    c.a <- c.a ^^^ result
-    let _ = set_nz_flags c (c.a &&& 0xff)
-    ()
-
-let rra c args addr =
-    let carry = args &&& 0x1
-
-    let result =
-        (args >>> 1)
-        ||| ((if c.carry then 1 else 0) <<< 7)
-
-    store_byte c addr result
-    let data = c.a + result + carry
-    c.carry <- (data > 0xff)
-
-    c.overflow <-
-        ((c.a &&& 0x80) = (result &&& 0x80))
-        && ((result &&& 0x80) <> ((result &&& 0x80)))
-
-    c.a <- (data &&& 0xff)
-    let _ = set_nz_flags c (c.a &&& 0xff)
-    ()
-
-let nmi cpu =
-    push_word cpu cpu.pc
-    let flags = flags_to_int cpu in
-    push_byte cpu flags
-    cpu.nmi_triggered <- false
-    cpu.cycles <- cpu.cycles + 7
-    cpu.interrupt <- true
-    cpu.pc <- load_word cpu 0xFFFA
-
-
 let execute_instruction cpu instruction =
     let args = instruction.args in
     let target = instruction.target in
 
     match instruction.op with
-    | ADC -> adc cpu args
-    | AND -> and_op cpu args
-    | ASL -> asl_op cpu args target
-    | BCS -> bcs cpu args
-    | BCC -> bcc cpu args
-    | BEQ -> beq cpu args
-    | BIT -> bit cpu args
-    | BMI -> bmi cpu args
-    | BNE -> bne cpu args
-    | BPL -> bpl cpu args
-    | BRK -> brk cpu
-    | BVS -> bvs cpu args
-    | BVC -> bvc cpu args
+    | ADC ->
+        let sum = cpu.a + args + System.Convert.ToInt32(cpu.carry) in
+        cpu.carry <- sum > 0xFF
+        (* Oh boy... *)
+        cpu.overflow <- (~~~(cpu.a ^^^ args)) &&& (cpu.a ^^^ sum) &&& 0x80 > 0
+        cpu.a <- set_nz_flags cpu (sum % 0x100)
+    | AND -> cpu.a <- set_nz_flags cpu (cpu.a &&& args)
+    | ASL ->
+        cpu.carry <- args &&& 0x80 > 0
+        let result = set_nz_flags cpu ((args <<< 1) &&& 0xFF) in
+        write_target cpu target result
+    | BCS -> branch cpu args cpu.carry
+    | BCC -> branch cpu args (not cpu.carry)
+    | BEQ -> branch cpu args cpu.zero
+    | BIT ->
+        cpu.zero <- (cpu.a &&& args) = 0
+        cpu.overflow <- args &&& Flags.overflow <> 0
+        cpu.negative <- args &&& Flags.negative <> 0
+    | BMI -> branch cpu args cpu.negative
+    | BNE -> branch cpu args (not cpu.zero)
+    | BPL -> branch cpu args (not cpu.negative)
+    | BRK ->
+        push_word cpu (cpu.pc + 1)
+        push_byte cpu ((flags_to_int cpu) ||| Flags.break4)
+        cpu.interrupt <- true
+        cpu.pc <- load_word cpu 0xFFFE
+    | BVS -> branch cpu args cpu.overflow
+    | BVC -> branch cpu args (not cpu.overflow)
     | CLC -> cpu.carry <- false
     | CLD -> cpu.decimal <- false
     | CLI -> cpu.interrupt <- false
     | CLV -> cpu.overflow <- false
-    | CMP -> cmp cpu args
-    | CPX -> cpx cpu args
-    | CPY -> cpy cpu args
-    | DEC -> dec cpu args target
-    | DEX -> dex cpu
-    | DEY -> dey cpu
-    | EOR -> eor cpu args
-    | INC -> inc cpu args target
-    | INX -> inx cpu
-    | INY -> iny cpu
-    | JMP -> jmp cpu target.Value
-    | JSR -> jsr cpu target.Value
-    | LDA -> lda cpu args
-    | LDX -> ldx cpu args
-    | LDY -> ldy cpu args
-    | LSR -> lsr_op cpu args target
+    | CMP -> compare_op cpu cpu.a args
+    | CPX -> compare_op cpu cpu.x args
+    | CPY -> compare_op cpu cpu.y args
+    | DEC -> let result = wrapping_sub args 1 in write_target cpu target (set_nz_flags cpu result)
+    | DEX -> cpu.x <- set_nz_flags cpu (wrapping_sub cpu.x 1)
+    | DEY -> cpu.y <- set_nz_flags cpu (wrapping_sub cpu.y 1)
+    | EOR -> cpu.a <- set_nz_flags cpu (cpu.a ^^^ args)
+    | INC -> let result = wrapping_add args 1 in write_target cpu target (set_nz_flags cpu result)
+    | INX -> cpu.x <- set_nz_flags cpu (wrapping_add cpu.x 1)
+    | INY -> cpu.y <- set_nz_flags cpu (wrapping_add cpu.y 1)
+    | JMP -> cpu.pc <- target.Value
+    | JSR ->
+        push_word cpu (wrapping_sub_w cpu.pc 1)
+        cpu.pc <- target.Value
+    | LDA -> cpu.a <- set_nz_flags cpu args
+    | LDX -> cpu.x <- set_nz_flags cpu args
+    | LDY -> cpu.y <- set_nz_flags cpu args
+    | LSR ->
+        cpu.carry <- args &&& 1 > 0
+        let result = set_nz_flags cpu (args >>> 1) in
+        write_target cpu target result
+
     | NOP -> ()
-    | ORA -> ora cpu args
+    | ORA -> cpu.a <- set_nz_flags cpu (cpu.a ||| args)
     | PHA -> push_byte cpu cpu.a
-    | PHP -> php cpu
-    | PLA -> pla cpu
-    | PLP -> plp cpu
-    | ROL -> rol cpu args target
-    | ROR -> ror cpu args target
-    | RTI -> rti cpu
-    | RTS -> rts cpu
-    | SBC -> sbc cpu args
+    | PHP -> let flags = (flags_to_int cpu) ||| Flags.break4 in push_byte cpu flags
+    | PLA -> cpu.a <- set_nz_flags cpu (pop_byte cpu)
+    | PLP ->
+        let flags = pop_byte cpu in
+        cpu.carry <- flags &&& Flags.carry > 0
+        cpu.zero <- flags &&& Flags.zero > 0
+        cpu.interrupt <- flags &&& Flags.interrupt > 0
+        cpu.decimal <- flags &&& Flags.decimal > 0
+        cpu.overflow <- flags &&& Flags.overflow > 0
+        cpu.negative <- flags &&& Flags.negative > 0
+    | ROL ->
+        let carry = if cpu.carry then 1 else 0 in
+        cpu.carry <- args &&& 0x80 > 0
+        let result = ((args <<< 1) ||| carry) &&& 0xFF in
+        write_target cpu target (set_nz_flags cpu result)
+
+    | ROR ->
+        let carry = if cpu.carry then 1 else 0 in
+        cpu.carry <- args &&& 1 = 1
+        let result = (args >>> 1) ||| (carry <<< 7) in
+        write_target cpu target (set_nz_flags cpu result)
+
+    | RTI ->
+        let flags = pop_byte cpu in
+        cpu.carry <- flags &&& Flags.carry > 0
+        cpu.zero <- flags &&& Flags.zero > 0
+        cpu.interrupt <- flags &&& Flags.interrupt > 0
+        cpu.decimal <- flags &&& Flags.decimal > 0
+        cpu.overflow <- flags &&& Flags.overflow > 0
+        cpu.negative <- flags &&& Flags.negative > 0
+        cpu.pc <- pop_word cpu
+    | RTS -> cpu.pc <- (pop_word cpu) + 1
+    | SBC ->
+        let args2 = (args ^^^ 0xFF)
+        let sum = cpu.a + args2 + System.Convert.ToInt32(cpu.carry) in
+        cpu.carry <- sum > 0xFF
+
+        cpu.overflow <-
+            (~~~(cpu.a ^^^ args2))
+            &&& (cpu.a ^^^ sum)
+            &&& 0x80 > 0
+
+        cpu.a <- set_nz_flags cpu (sum % 0x100)
     | SEC -> cpu.carry <- true
     | SED -> cpu.decimal <- true
     | SEI -> cpu.interrupt <- true
-    | STA -> sta cpu target.Value
-    | STX -> stx cpu target.Value
-    | STY -> sty cpu target.Value
-    | TAX -> tax cpu
-    | TAY -> tay cpu
-    | TSX -> tsx cpu
-    | TXA -> txa cpu
-    | TXS -> txs cpu
-    | TYA -> tya cpu
+    | STA -> store_byte cpu target.Value cpu.a
+    | STX -> store_byte cpu target.Value cpu.x
+    | STY -> store_byte cpu target.Value cpu.y
+    | TAX -> cpu.x <- set_nz_flags cpu cpu.a
+    | TAY -> cpu.y <- set_nz_flags cpu cpu.a
+    | TSX -> cpu.x <- set_nz_flags cpu cpu.s
+    | TXA -> cpu.a <- set_nz_flags cpu cpu.x
+    | TXS -> cpu.s <- cpu.x
+    | TYA -> cpu.a <- set_nz_flags cpu cpu.y
     // undocumented opcodes
-    | LAX -> lax cpu args
-    | SAX -> sax cpu target.Value
-    | DCP -> dcp cpu args target.Value
-    | ISB -> isb cpu args target.Value
-    | SLO -> slo cpu args target.Value
-    | RLA -> rla cpu args target.Value
-    | SRE -> sre cpu args target.Value
-    | RRA -> rra cpu args target.Value
+    | LAX ->
+        cpu.a <- args
+        cpu.x <- set_nz_flags cpu cpu.a
+
+    | SAX -> store_byte cpu target.Value (cpu.a &&& cpu.x)
+    | DCP ->
+        let mutable dat = if args = 0 then 0xff else args - 1
+        let value = (dat &&& 0xff)
+        store_byte cpu target.Value value
+        let value2 = (value ^^^ 0xff)
+        let result = cpu.a + value2 + 1
+        cpu.carry <- (result > 0xff)
+        let _ = set_nz_flags cpu (result &&& 0xff)
+        ()
+    | ISB ->
+        let mutable dat = if args = 0xff then 0 else args + 1
+        let value = (dat &&& 0xff)
+        store_byte cpu target.Value value
+        let value2 = (value ^^^ 0xff)
+        let result = cpu.a + value2 + if cpu.carry then 1 else 0
+        cpu.carry <- (result > 0xff)
+
+        cpu.overflow <-
+            ((cpu.a &&& 0x80) = (value2 &&& 0x80))
+            && ((value2 &&& 0x80) <> ((result &&& 0x80)))
+
+        cpu.a <- (result &&& 0xff)
+        let _ = set_nz_flags cpu (cpu.a &&& 0xff)
+        ()
+    | SLO ->
+        let res = (args <<< 1)
+        cpu.carry <- (res > 0xff)
+        let result = (res &&& 0xff)
+        store_byte cpu target.Value result
+        cpu.a <- (cpu.a ||| result)
+        let _ = set_nz_flags cpu (cpu.a &&& 0xff)
+        ()
+    | RLA ->
+        let res = ((args <<< 1) ||| (if cpu.carry then 1 else 0))
+        cpu.carry <- (res > 0xff)
+        let result = (res &&& 0xff)
+        store_byte cpu target.Value result
+        cpu.a <- (cpu.a &&& result)
+        let _ = set_nz_flags cpu (cpu.a &&& 0xff)
+        ()
+    | SRE ->
+        let carry = args &&& 0x1
+        let result = args >>> 1
+        cpu.carry <- carry > 0
+        store_byte cpu target.Value result
+        cpu.a <- cpu.a ^^^ result
+        let _ = set_nz_flags cpu (cpu.a &&& 0xff)
+        ()
+
+    | RRA ->
+        let carry = args &&& 0x1
+
+        let result =
+            (args >>> 1)
+            ||| ((if cpu.carry then 1 else 0) <<< 7)
+
+        store_byte cpu target.Value result
+        let data = cpu.a + result + carry
+        cpu.carry <- (data > 0xff)
+
+        cpu.overflow <-
+            ((cpu.a &&& 0x80) = (result &&& 0x80))
+            && ((result &&& 0x80) <> ((result &&& 0x80)))
+
+        cpu.a <- (data &&& 0xff)
+        let _ = set_nz_flags cpu (cpu.a &&& 0xff)
+        ()
 
 let decode_instruction cpu instruction =
     let (op, mode, cycles, extra_page_cycles) = decode instruction
