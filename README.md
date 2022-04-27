@@ -6,7 +6,7 @@ NES Emulator written in F#
 
 ## WIP
 
-
+nestest ok  
 
 
 
