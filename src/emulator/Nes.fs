@@ -8,20 +8,24 @@ open NESTEST
 
 let trace (cpu: CPU.t) instruction opcode =
     let str_op = instruction.op.ToString()
-    // printfn
-    //     "%04X %s    A:%02X X:%02X Y:%02X P:%02X SP:%02X    CYC:%4d"
-    //     cpu.pc
-    //     str_op
-    //     cpu.a
-    //     cpu.x
-    //     cpu.y
-    //     (CPU.flags_to_int cpu)
-    //     cpu.s
-    //     cpu.cycles
+    printfn
+        "%04X %s    A:%02X X:%02X Y:%02X P:%02X SP:%02X    CYC:%4d"
+        cpu.pc
+        str_op
+        cpu.a
+        cpu.x
+        cpu.y
+        (CPU.flags_to_int cpu)
+        cpu.s
+        cpu.cycles
+    // if pcstr = "E76F" then
+    //     printfn ""
+
 
     let s1 = sprintf "A:%02X X:%02X Y:%02X P:%02X SP:%02X" cpu.a cpu.x cpu.y (CPU.flags_to_int cpu) cpu.s
     // printfn "%s" reglog[cpu.steps+1]
-    if not (s1.Equals(reglog[cpu.steps+1])) 
+    let pcstr = sprintf "%04X"  cpu.pc
+    if not (s1.Equals(reglog[cpu.steps+1])) || pcstr = ""
     then 
         // let s2 = sprintf "%04X %s    A:%02X X:%02X Y:%02X P:%02X SP:%02X    CYC:%4d" cpu.pc str_op cpu.a cpu.x cpu.y (CPU.flags_to_int cpu) cpu.s cpu.cycles
         printfn "\n           : %04X %s" cpu.pc str_op
@@ -42,5 +46,5 @@ type Nes() =
 
     member this.loopNes =
         let pcval = CPU.init  &lcpu true
-        for i in 0..6000 do
+        for i in 0..8990 do
             CPU.stepCpu &lcpu trace

@@ -60,3 +60,9 @@ type t =
     // undocumented opcodes
     | LAX
     | SAX
+    | DCP
+    | ISB
+    | SLO
+    | RLA
+    | SRE
+    | RRA
