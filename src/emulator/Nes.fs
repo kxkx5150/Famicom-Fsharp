@@ -37,25 +37,19 @@ let trace (cpu: CPU.t) instruction opcode =
 
 type Nes() =
     let rom = new Rom()
-    let mapper = new Mapper0(rom)
+    let ppu = new PPU()
+    let mapper = new Mapper0(rom, ppu)
     let mem = MEM.makeRam mapper
     let mutable lcpu = CPU.make true true mem
     let _ = mem.mapper.setRom "nestest.nes"
-    let ppu = new PPU()
-    let _ = ppu.start(rom)
-    
+    let _ = mem.mapper.setPpu ()
 
-    member this.setRom(path: string) = 
-        printfn "Loaded %s\n" path
-        
+    member this.setRom(path: string) = printfn "Loaded %s\n" path
+
     member this.runNesTest =
         let pcval = CPU.initTest &lcpu true
+
         for i in 0..8990 do
             CPU.stepCpu &lcpu trace
 
-    member this.runNes =
-        printfn "runNes"
-
-
-
-
+    member this.runNes = printfn "runNes"

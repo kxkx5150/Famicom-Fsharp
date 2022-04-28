@@ -10,8 +10,8 @@ type NESWindow() as this =
     inherit Form()
     do this.ClientSize <- Size(256, 240)
     let nes = new Nes()
-    let _ = nes.setRom "nestest.nes"
-    // let _ = nes.runNesTest
+    // let _ = nes.setRom "nestest.nes"
+    let _ = nes.runNesTest
 
     member this.mainLoop =
         printfn "start window loop"

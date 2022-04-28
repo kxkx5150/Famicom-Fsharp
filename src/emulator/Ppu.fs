@@ -330,4 +330,3 @@ type PPU() =
         regs[0x03] <- (regs[0x03] + byte 1) &&& byte 0xff
 
     member this.write_sprite_addr_reg(value: byte) = regs[0x03] <- value
-

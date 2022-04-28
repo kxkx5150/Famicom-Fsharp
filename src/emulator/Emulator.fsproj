@@ -7,13 +7,13 @@
   <ItemGroup>
     <Compile Include="log.fs" />
     <Compile Include="Rom.fs" />
+    <Compile Include="Color.fs" />
+    <Compile Include="Ppu.fs" />
     <Compile Include="Mapper.fs" />
     <Compile Include="Mapper0.fs" />
     <Compile Include="Mem.fs" />
     <Compile Include="instructions.fs" />
     <Compile Include="Cpu.fs" />
-    <Compile Include="Color.fs" />
-    <Compile Include="Ppu.fs" />
     <Compile Include="Nes.fs" />
   </ItemGroup>
 </Project>
