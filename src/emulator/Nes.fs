@@ -36,14 +36,15 @@ let trace (cpu: CPU.t) instruction opcode =
 
 type Nes() =
     let rom = new Rom()
-    let lromcop = rom.setRom "nestest.nes"
     
     // let lmappr = Mapper.mapper_for lromcop
     // let lmem = MEM.makeRam (lmappr)
     // let mutable lcpu = CPU.make true true lmem
 
-    // member this.setRom(path: string) = printfn "Loaded %s\n" path
-
+    member this.setRom(path: string) = 
+        printfn "Loaded %s\n" path
+        let lromcop = rom.setRom path
+        ()
     // member this.runNesTest =
     //     let pcval = CPU.initTest &lcpu true
 
