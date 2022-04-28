@@ -1,7 +1,7 @@
 module NES
 
 open ROM
-open Mapper
+open Mapper0
 open MEM
 open CPU
 open NESTEST
@@ -36,20 +36,17 @@ let trace (cpu: CPU.t) instruction opcode =
 
 type Nes() =
     let rom = new Rom()
-    
-    // let lmappr = Mapper.mapper_for lromcop
-    // let lmem = MEM.makeRam (lmappr)
-    // let mutable lcpu = CPU.make true true lmem
+    let mapper = new Mapper0(rom)
+    let mem = MEM.makeRam mapper
+    let mutable lcpu = CPU.make true true mem
+    let _ = mem.mapper.setRom "nestest.nes"
 
     member this.setRom(path: string) = 
         printfn "Loaded %s\n" path
-        let lromcop = rom.setRom path
-        ()
-    // member this.runNesTest =
-    //     let pcval = CPU.initTest &lcpu true
+        
+    member this.runNesTest =
+        let pcval = CPU.initTest &lcpu true
+        for i in 0..8990 do
+            CPU.stepCpu &lcpu trace
 
-    //     for i in 0..8990 do
-    //         CPU.stepCpu &lcpu trace
 
-    member this.empty =
-        printfn ""

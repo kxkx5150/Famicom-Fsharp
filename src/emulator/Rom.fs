@@ -9,7 +9,7 @@ type Mirroring =
 
 type Rom() =
     let mutable rom: byte array = [||]
-    let mutable prg_rom_page_count: int = 0
+    let mutable prg_rom_pcount: int = 0
     let mutable chr_rom_page_count: int = 0
     let mutable screen_mirroring: Mirroring = Mirroring.VERTICAL
     let mutable sram_enable: bool = false
@@ -17,12 +17,13 @@ type Rom() =
     let mutable four_screen: bool = false
     let mutable mapper_number: int = 0
 
-    let mutable srams: byte array= [||]
-    let mutable roms: byte array= [||]
-    let mutable prgrom_state: byte array= [||]
-    let mutable chrrom_state: byte array= [||]
+    let mutable srams: byte array = Array.zeroCreate<byte> 0x2000
+    let mutable prgrom_state: int array = Array.zeroCreate<int> 4
+    let mutable chrrom_state: int array = Array.zeroCreate<int> 16
     let mutable prgrom_pages = Array2D.zeroCreate<byte> 1 1
     let mutable chrrom_pages = Array2D.zeroCreate<byte> 1 1
+    let mutable roms' = Array2D.zeroCreate<byte> 4 0x4000
+    member this.roms = roms'
 
     member this.init(rom: byte array) =
         printfn "rom init"
@@ -31,12 +32,15 @@ type Rom() =
         let chr_psize = 0x2000
         ()
 
+    member this.prg_rom_page_count = prg_rom_pcount
+
     member this.setRom(path: string) =
         rom <- path |> File.ReadAllBytes
-        prg_rom_page_count <- int rom[4]
+        prg_rom_pcount <- int rom[4]
         chr_rom_page_count <- int rom[5]
         four_screen <- (int rom[6] &&& 0b1000) <> 0
         let vertical_mirroring = (int rom[6] &&& 0b1) <> 0
+
         screen_mirroring <-
             match (four_screen, vertical_mirroring) with
             | (true, _) -> Mirroring.FOUR_SCREEN
@@ -53,25 +57,48 @@ type Rom() =
         let prg_psize = 0x4000
         let chr_psize = 0x2000
 
-        prgrom_pages <- Array2D.zeroCreate<byte> (prg_rom_page_count*2) prg_psize
-        chrrom_pages <- Array2D.zeroCreate<byte> (chr_rom_page_count*8) chr_psize
-        
-        if (0 < prg_rom_page_count) then
-            for i in 0 .. (prg_rom_page_count-1) do
-                let offset = hlen + (prg_psize / 2) * i;
-                let prg = rom[offset .. (offset + prg_psize / 2)]
-                for j in 0..(prg.Length-1) do
-                    prgrom_pages[i, j] <- prg[j]
+        prgrom_pages <- Array2D.zeroCreate<byte> (prg_rom_pcount * 2) prg_psize
+        chrrom_pages <- Array2D.zeroCreate<byte> (chr_rom_page_count * 8) chr_psize
+
+        if (0 < prg_rom_pcount) then
+            for i in 0 .. ((prg_rom_pcount * 2) - 1) do
+                let offset = hlen + (prg_psize / 2) * i
+                let v = rom[offset .. (offset + prg_psize / 2)]
+
+                for j in 0 .. (v.Length - 1) do
+                    prgrom_pages[i, j] <- v[j]
 
         if (0 < chr_rom_page_count) then
             let romlen = rom.Length
-            for i in 0 .. (chr_rom_page_count-1) do
+
+            for i in 0 .. (chr_rom_page_count - 1) do
                 let chrrom_offset =
-                    hlen + prg_psize * prg_rom_page_count + (chr_psize / 8) * i;
-                let mutable h = chrrom_offset + chr_psize / 2;
-                if h > romlen then
-                    h <- romlen
-                let chr = rom[chrrom_offset ..h]
-                for j in 0..(chr.Length-1) do
+                    hlen
+                    + prg_psize * prg_rom_pcount
+                    + (chr_psize / 8) * i
+
+                let mutable h = chrrom_offset + chr_psize / 2
+                if h > romlen then h <- romlen
+                let chr = rom[chrrom_offset..h]
+
+                for j in 0 .. (chr.Length - 1) do
                     chrrom_pages[i, j] <- chr[j]
-        
+
+    member this.clear_roms() = printfn "clear_roms"
+
+
+    member this.set_prgrom_page_8k(page: int, rompage: int) =
+        if rompage < 0 then
+            prgrom_state[page] <- rompage
+        else
+            let pidx = rompage % (this.prg_rom_page_count * 2)
+            prgrom_state[page] <- pidx
+            let idx = prgrom_state[page]
+            let vv = prgrom_pages[idx, *]
+
+            for j in 0 .. (vv.Length - 1) do
+                this.roms[ page, j ] <- vv[j]
+
+    member this.set_prgrom_page(no: int, num: int) =
+        this.set_prgrom_page_8k ((no * 2), (num * 2))
+        this.set_prgrom_page_8k ((no * 2 + 1), (num * 2 + 1))

@@ -1,36 +1,40 @@
-module Mapper
+module MapperBase
 
-// open ROM
+[<AbstractClass>]
+type MapperBase() =
 
-// type t =
-//     { rom: ROM.RomComponentsom
-//       load: int -> byte
-//       store: int -> byte -> unit }
+    member this.init() = printfn "mapperbase init"
 
-// module NRom =
-//     let load (rom: ROM.RomComponentsom) address =
-//         if address < 0x2000 then
-//             rom.chr.[address]
-//         else if address >= 0x6000 && address < 0x8000 then
-//             rom.ram.[address]
-//         else
-//             rom.prg.[address &&& (rom.headers.prg_size - 1)]
+    member this.read_low(addr: int) = 0x00
 
-//     let store (rom: ROM.RomComponentsom) address value =
-//         if address < 0x2000 then
-//             rom.chr.[address] <- value
-//         else if address >= 0x6000 && address < 0x8000 then
-//             rom.ram.[address - 0x6000] <- value
-//         else
-//             failwith (sprintf "Can't store to PRG @ %04X = %02X" address value)
+    member this.write_low(addr: int, data: int) = ()
 
-//     let make (rom: ROM.RomComponentsom) =
-//         { rom = rom
-//           load = load rom
-//           store = store rom }
+    member this.read_ppudata() = 0x00
 
+    member this.write_ppudata() = ()
 
-// let mapper_for (rom: ROM.RomComponentsom) =
-//     match rom.headers.mapper with
-//     | 0 -> NRom.make rom
-//     | n -> failwith (sprintf "Unknwown mapper: %d" n)
+    member this.build_bgline() = ()
+
+    member this.build_spriteline() = ()
+
+    member this.read_sram() = 0x00
+
+    member this.write_sram() = ()
+
+    member this.write(addr: int, data: int) = ()
+
+    member this.hsync() = ()
+
+    member this.cpusync() = ()
+
+    member this.setirq() = ()
+
+    member this.clearirq() = ()
+
+    member this.out_exsound() = 0x00
+
+    member this.exsound_sync() = ()
+
+    member this.getstate() = ()
+
+    member this.setstate() = ()

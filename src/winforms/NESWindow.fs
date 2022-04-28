@@ -11,14 +11,11 @@ type NESWindow() as this =
     do this.ClientSize <- Size(256, 240)
     let nes = new Nes()
     let _ = nes.setRom "nestest.nes"
+    let _ = nes.runNesTest
 
-    member this.mainLoop = 
+    member this.mainLoop =
         printfn "start window loop"
-        // nes.runNesTest
 
     override this.OnFormClosing args = base.OnFormClosing args
     override this.OnShown args = base.OnShown args
-    member this.ShowError(ex: exn) =
-        printfn "error %s\n" Resource.title
-
-
+    member this.ShowError(ex: exn) = printfn "error %s\n" Resource.title
