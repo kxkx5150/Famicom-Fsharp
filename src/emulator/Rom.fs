@@ -10,7 +10,7 @@ type Mirroring =
 type Rom() =
     let mutable rom: byte array = [||]
     let mutable prg_rom_pcount: int = 0
-    let mutable chr_rom_page_count: int = 0
+    let mutable chr_rom_pcount: int = 0
     let mutable screen_mirroring: Mirroring = Mirroring.VERTICAL
     let mutable sram_enable: bool = false
     let mutable trainer_Enable: bool = false
@@ -21,10 +21,11 @@ type Rom() =
     let mutable prgrom_state: int array = Array.zeroCreate<int> 4
     let mutable chrrom_state: int array = Array.zeroCreate<int> 16
     let mutable prgrom_pages = Array2D.zeroCreate<byte> 1 1
-    let mutable chrrom_pages = Array2D.zeroCreate<byte> 1 1
+    let mutable chrrom_pages' = Array2D.zeroCreate<byte> 1 1
     let mutable roms' = Array2D.zeroCreate<byte> 4 0x4000
     member this.roms = roms'
-
+    member this.chrrom_pages = chrrom_pages'
+    
     member this.init(rom: byte array) =
         printfn "rom init"
         let hlen = 0x0010
@@ -32,12 +33,15 @@ type Rom() =
         let chr_psize = 0x2000
         ()
 
+    member this.setchrrom_state = chrrom_state
     member this.prg_rom_page_count = prg_rom_pcount
+    member this.chr_rom_page_count = chr_rom_pcount
+    member this.getscreen_mirroring = screen_mirroring
 
     member this.setRom(path: string) =
         rom <- path |> File.ReadAllBytes
         prg_rom_pcount <- int rom[4]
-        chr_rom_page_count <- int rom[5]
+        chr_rom_pcount <- int rom[5]
         four_screen <- (int rom[6] &&& 0b1000) <> 0
         let vertical_mirroring = (int rom[6] &&& 0b1) <> 0
 
@@ -58,7 +62,7 @@ type Rom() =
         let chr_psize = 0x2000
 
         prgrom_pages <- Array2D.zeroCreate<byte> (prg_rom_pcount * 2) prg_psize
-        chrrom_pages <- Array2D.zeroCreate<byte> (chr_rom_page_count * 8) chr_psize
+        chrrom_pages' <- Array2D.zeroCreate<byte> (chr_rom_pcount * 8) chr_psize
 
         if (0 < prg_rom_pcount) then
             for i in 0 .. ((prg_rom_pcount * 2) - 1) do
@@ -68,10 +72,10 @@ type Rom() =
                 for j in 0 .. (v.Length - 1) do
                     prgrom_pages[i, j] <- v[j]
 
-        if (0 < chr_rom_page_count) then
+        if (0 < chr_rom_pcount) then
             let romlen = rom.Length
 
-            for i in 0 .. (chr_rom_page_count - 1) do
+            for i in 0 .. (chr_rom_pcount - 1) do
                 let chrrom_offset =
                     hlen
                     + prg_psize * prg_rom_pcount
@@ -82,7 +86,7 @@ type Rom() =
                 let chr = rom[chrrom_offset..h]
 
                 for j in 0 .. (chr.Length - 1) do
-                    chrrom_pages[i, j] <- chr[j]
+                    chrrom_pages'[i, j] <- chr[j]
 
     member this.clear_roms() = printfn "clear_roms"
 
