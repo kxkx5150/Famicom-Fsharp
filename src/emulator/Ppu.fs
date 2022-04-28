@@ -1,6 +1,7 @@
 module PPU
 
 open ROM
+open COLOR
 
 type PPU() =
     let mutable ppux: int = 341
@@ -62,7 +63,12 @@ type PPU() =
         imgok <- false
         this.clear_arryas ()
 
-    member this.clear_arryas() = printfn ""
+    member this.clear_arryas() =
+        // self.imgdata[self.imgidx] = plt.0;
+        // self.imgdata[self.imgidx + 1] = plt.1;
+        // self.imgdata[self.imgidx + 2] = plt.2;
+        // self.imgidx += 3;
+        printfn ""
 
     member this.crate_spbit_array() =
         for i in 0 .. (256 - 1) do
@@ -140,9 +146,9 @@ type PPU() =
             tmpx <- 0
             sprite_zero <- false
 
-            if line < 240 then printfn ""
-            elif line = 240 then printfn ""
-            elif line = 262 then printfn ""
+            if line < 240 then this.render_frame ()
+            elif line = 240 then this.in_vblank ()
+            elif line = 262 then this.post_render ()
 
     // if (self.sprite_zero && (self.regs[0x02] & 0x40) != 0x40) {
     //     let i = if self.ppux > 255 { 255 } else { self.ppux };
@@ -155,6 +161,7 @@ type PPU() =
     //     }
     // }
 
+
     member this.render_frame() = printfn ""
 
     member this.build_bg() = printfn ""
@@ -166,145 +173,161 @@ type PPU() =
 
 
 
-    member this.in_vblank() = printfn ""
 
-    member this.post_render() = printfn ""
+
+
+    member this.in_vblank() =
+        scroll_reg_flg <- false
+        regs[0x02] <- regs[0x02] &&& byte 0x1f
+        regs[0x02] <- regs[0x02] ||| byte 0x80
+
+        if (regs[0x00] &&& byte 0x80) = byte 0x80 then
+            // irq.set_nmi(true);
+            ()
+
+    member this.post_render() =
+        line <- 0
+
+        if (this.is_screen_enable ()
+            || this.is_sprite_enable ()) then
+            ppu_addr <- ppu_addr_buffer
+
+        regs[0x02] <- regs[0x02] &&& byte 0x7f
+        imgok <- true
 
     member this.set_img_data() = printfn ""
 
-    member this.clear_img() = printfn ""
+    member this.clear_img() =
+        imgidx <- 0
+        imgok <- false
 
-    member this.get_img_status() = printfn ""
+    member this.get_img_status() =
+        if imgok then
+            (true, imgdata)
+        else
+            (false, imgdata)
 
-    member this.is_screen_enable() = printfn ""
+    member this.is_screen_enable() = (regs[0x01] &&& byte 0x08) = byte 0x08
 
-    member this.is_sprite_enable() = printfn ""
+    member this.is_sprite_enable() = (regs[0x01] &&& byte 0x10) = byte 0x10
 
-    member this.is_bigsize() = printfn ""
+    member this.is_bigsize() =
+        if ((regs[0x00] &&& byte 0x20) = byte 0x20) then
+            16
+        else
+            8
 
 
 
 
 
-    member this.write_scroll_reg(value: byte) = 
+
+
+
+    member this.write_scroll_reg(value: byte) =
         regs[0x05] <- value
 
-        if scroll_reg_flg then 
-            ppu_addr_buffer <- ((ppu_addr_buffer &&& 0x8c1f)
-                ||| ((int value &&& 0xf8) <<< 2)
-                ||| ((int value &&& 0x07) <<< 12))
+        if scroll_reg_flg then
+            ppu_addr_buffer <-
+                ((ppu_addr_buffer &&& 0x8c1f)
+                 ||| ((int value &&& 0xf8) <<< 2)
+                 ||| ((int value &&& 0x07) <<< 12))
         else
-            ppu_addr_buffer <- (ppu_addr_buffer &&& 0xffe0) 
-            ||| ((int value &&& 0xf8) >>> 3)
+            ppu_addr_buffer <-
+                (ppu_addr_buffer &&& 0xffe0)
+                ||| ((int value &&& 0xf8) >>> 3)
+
             h_scroll_val <- (int value &&& 7)
+
         scroll_reg_flg <- not scroll_reg_flg
 
     member this.write_ppu_ctrl0_reg(value: byte) =
         regs[0x00] <- value
-        ppu_addr_buffer <- ((ppu_addr_buffer &&& 0xf3ff) ||| ((int value &&& 0x03) <<< 10))
-    
-    member this.write_ppu_ctrl1_reg(value: byte) =
-        regs[0x01] <- value
 
-    member this.read_ppu_status_reg() =
+        ppu_addr_buffer <-
+            ((ppu_addr_buffer &&& 0xf3ff)
+             ||| ((int value &&& 0x03) <<< 10))
+
+    member this.write_ppu_ctrl1_reg(value: byte) = regs[0x01] <- value
+
+    member this.read_ppu_status_reg(value: byte) =
         let result = regs[0x02]
         regs[0x02] <- (regs[0x02] &&& byte 0x1f)
         scroll_reg_flg <- false
         ppu_addr_reg_flg <- false
         result
 
-    member this.write_ppu_addr_reg() = printfn ""
+    member this.write_ppu_addr_reg(value: byte) =
+        regs[0x06] <- value
 
-    member this.read_ppu_data_reg() = printfn ""
+        if ppu_addr_reg_flg then
+            ppu_addr_buffer <- (ppu_addr_buffer &&& 0xff00) ||| int value
+            ppu_addr <- ppu_addr_buffer
+        else
+            ppu_addr_buffer <-
+                (ppu_addr_buffer &&& 0x00ff)
+                ||| ((int value &&& 0x3f) <<< 8)
 
-    member this.write_ppu_data_reg() = printfn ""
+        ppu_addr_reg_flg <- not ppu_addr_reg_flg
 
-    member this.write_sprite_data() = printfn ""
+    member this.read_ppu_data_reg() =
+        let tmp = ppu_read_buffer
+        let addr = ppu_addr &&& 0x3fff
+        ppu_read_buffer <- int vram[addr >>> 10, addr &&& 0x03ff]
 
-    member this.write_sprite_addr_reg() = printfn ""
+        let pval =
+            if ((regs[0x00] &&& byte 0x04) = byte 0x04) then
+                32
+            else
+                1
 
+        ppu_addr <- (ppu_addr + pval) &&& 0xffff
+        tmp
 
-let PALLETE =
-    [| 0x10
-       0x01
-       0x02
-       0x03
-       0x10
-       0x05
-       0x06
-       0x07
-       0x10
-       0x09
-       0x0a
-       0x0b
-       0x10
-       0x0d
-       0x0e
-       0x0f |]
+    member this.write_ppu_data_reg(value: byte) =
+        regs[0x07] <- value
+        let tmpppu_addr = ppu_addr &&& 0x3fff
+        vram[tmpppu_addr >>> 10, tmpppu_addr &&& 0x03ff] <- value
 
+        if tmpppu_addr < 0x3000 then
+            let pval =
+                if ((regs[0x00] &&& byte 0x04) = byte 0x04) then
+                    32
+                else
+                    1
 
-let PALLETE_TABLE =
-    [ (101, 101, 101)
-      (0, 45, 105)
-      (19, 31, 127)
-      (60, 19, 124)
-      (96, 11, 98)
-      (115, 10, 55)
-      (113, 15, 7)
-      (90, 26, 0)
-      (52, 40, 0)
-      (11, 52, 0)
-      (0, 60, 0)
-      (0, 61, 16)
-      (0, 56, 64)
-      (0, 0, 0)
-      (0, 0, 0)
-      (0, 0, 0)
-      (174, 174, 174)
-      (15, 99, 179)
-      (64, 81, 208)
-      (120, 65, 204)
-      (167, 54, 169)
-      (192, 52, 112)
-      (189, 60, 48)
-      (159, 74, 0)
-      (109, 92, 0)
-      (54, 109, 0)
-      (7, 119, 4)
-      (0, 121, 61)
-      (0, 114, 125)
-      (0, 0, 0)
-      (0, 0, 0)
-      (0, 0, 0)
-      (254, 254, 255)
-      (93, 179, 255)
-      (143, 161, 255)
-      (200, 144, 255)
-      (247, 133, 250)
-      (255, 131, 192)
-      (255, 139, 127)
-      (239, 154, 73)
-      (189, 172, 44)
-      (133, 188, 47)
-      (85, 199, 83)
-      (60, 201, 140)
-      (62, 194, 205)
-      (78, 78, 78)
-      (0, 0, 0)
-      (0, 0, 0)
-      (254, 254, 255)
-      (188, 223, 255)
-      (209, 216, 255)
-      (232, 209, 255)
-      (251, 205, 253)
-      (255, 204, 229)
-      (255, 207, 202)
-      (248, 213, 180)
-      (228, 220, 168)
-      (204, 227, 169)
-      (185, 232, 184)
-      (174, 232, 208)
-      (175, 229, 234)
-      (182, 182, 182)
-      (0, 0, 0)
-      (0, 0, 0) ]
+            ppu_addr <- (ppu_addr + pval) &&& 0xffff
+        elif tmpppu_addr < 0x3eff then
+            vram[(tmpppu_addr - 0x1000) >>> 10, (tmpppu_addr - 0x1000) &&& 0x03ff] <- value
+
+            let pval =
+                if ((regs[0x00] &&& byte 0x04) = byte 0x04) then
+                    32
+                else
+                    1
+
+            ppu_addr <- (ppu_addr + pval) &&& 0xffff
+        else
+            let palNo = tmpppu_addr &&& 0x001f
+
+            if (palNo = 0x00 || palNo = 0x10) then
+                palette[0x10] <- value &&& byte 0x3f
+                palette[0x00] <- palette[0x10]
+            else
+                palette[palNo] <- value &&& byte 0x3f
+
+            let pval =
+                if ((regs[0x00] &&& byte 0x04) = byte 0x04) then
+                    32
+                else
+                    1
+
+            ppu_addr <- (ppu_addr + pval) &&& 0xffff
+
+    member this.write_sprite_data(value: byte) =
+        let idx = regs[0x03]
+        sprite_ram[int idx] <- value
+        regs[0x03] <- (regs[0x03] + byte 1) &&& byte 0xff
+
+    member this.write_sprite_addr_reg(value: byte) = regs[0x03] <- value
+
