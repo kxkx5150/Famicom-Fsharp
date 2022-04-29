@@ -43,7 +43,7 @@ type Nes() =
     let _ = mem.mapper.setRom "sm.nes"
 
     member this.initNes = 
-        let pcval = CPU.init &lcpu
+        let _ = CPU.init &lcpu
         ()
 
     member this.runNes =
