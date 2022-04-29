@@ -38,17 +38,18 @@ type Nes() =
     let mapper = new Mapper0(rom, ppu)
     let mem = MEM.makeRam mapper
 
-    
+
     let mutable lcpu = CPU.make false false mem
     let _ = mem.mapper.setRom "sm.nes"
 
-
-    let _ = mem.mapper.setPpu ()
+    member this.initNes = 
+        let pcval = CPU.init &lcpu
+        ()
 
     member this.runNes =
-        let pcval = CPU.init &lcpu
-        for i in 0..100000 do
-            CPU.stepCpu &lcpu trace
-            mem.mapper.runPpu 5
+        let prev_cycles = lcpu.cycles
+        CPU.stepCpu &lcpu trace
+        let elapsed_cycles = lcpu.cycles - prev_cycles
+        mem.mapper.runPpu elapsed_cycles
 
 

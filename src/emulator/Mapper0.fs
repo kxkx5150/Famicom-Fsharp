@@ -17,13 +17,12 @@ type Mapper0(rom': Rom, ppu': PPU) =
         this.nesrom.setRom path
         let _ = this.nesrom.set_prgrom_page (0, 0)
         let _ = this.nesrom.set_prgrom_page (1, this.nesrom.prg_rom_page_count - 1)
-        ()
-
-    member this.init(rom: byte array) = printfn "mapper init"
-
-    member this.setPpu() =
-        printfn "mapper setPpu"
+        ppu'.set_chr_rom_page(0, this.nesrom);
         ppu'.start (this.nesrom)
+
+    member this.init(rom: byte array) = 
+        printfn "mapper init"
+        ppu'.init()
 
     member this.runPpu(cpuclock: int) =
         ppu'.run cpuclock

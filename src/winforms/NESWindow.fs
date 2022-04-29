@@ -10,11 +10,17 @@ type NESWindow() as this =
     inherit Form()
     do this.ClientSize <- Size(256, 240)
     let nes = new Nes()
-
-    member this.mainLoop =
-        printfn "start window loop"
-        nes.runNes
+    let Loop =
+        async {
+            while true do
+                nes.runNes
+        }
 
     override this.OnFormClosing args = base.OnFormClosing args
-    override this.OnShown args = base.OnShown args
+    override this.OnShown args = 
+        base.OnShown args
+        this.BackColor <- Color.Black
+        nes.initNes
+        Async.Start(Loop)
+
     member this.ShowError(ex: exn) = printfn "error %s\n" Resource.title

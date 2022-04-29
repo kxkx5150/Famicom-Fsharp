@@ -55,8 +55,6 @@ type Rom() =
         trainer_Enable <- (int rom[6] &&& 0x04) <> 0
         mapper_number <- (int rom[6] >>> 4) ||| (int rom[7] &&& 0xf0)
 
-        let prg_rom_size = int rom[4] * 16384
-        let chr_rom_size = int rom[5] * 8192
         let hlen = 0x0010
         let prg_psize = 0x4000
         let chr_psize = 0x2000
@@ -88,6 +86,7 @@ type Rom() =
                 for j in 0 .. (chr.Length - 1) do
                     chrrom_pages'[i, j] <- chr[j]
 
+        ()
     member this.clear_roms() = printfn "clear_roms"
 
 
@@ -106,3 +105,5 @@ type Rom() =
     member this.set_prgrom_page(no: int, num: int) =
         this.set_prgrom_page_8k ((no * 2), (num * 2))
         this.set_prgrom_page_8k ((no * 2 + 1), (num * 2 + 1))
+
+

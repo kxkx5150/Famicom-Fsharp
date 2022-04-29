@@ -21,8 +21,8 @@ type PPU() =
     let mutable ppu_read_buffer: int = 0
     let mutable screen_mirroring: Mirroring = Mirroring.HORIZONTAL
 
-    let mutable vram = Array2D.zeroCreate<byte> 16 4096
-    let mutable vrams = Array2D.zeroCreate<byte> 16 1024
+    let mutable vram = Array2D.zeroCreate<byte> 16 0x2000
+    let mutable vrams = Array2D.zeroCreate<byte> 16 0x2000
 
     let mutable bg_line_buffer: byte array = Array.zeroCreate<byte> 264
     let mutable sp_line_buffer: int array = Array.zeroCreate<int> 264
@@ -31,7 +31,9 @@ type PPU() =
     let mutable sprite_ram: byte array = Array.create 0x100 (byte 0)
     let mutable spbit_pattern = Array3D.zeroCreate<byte> 256 256 8
 
-    member this.init() = this.reset
+    member this.init() = 
+        printfn "ppu init"
+        this.reset
 
     member this.start(rom': Rom) =
         printfn "ppu start"
@@ -103,8 +105,9 @@ type PPU() =
         else if 0 < rom.chr_rom_page_count then
             let tmp = romPage % (rom.chr_rom_page_count * 8)
             rom.setchrrom_state[ page ] <- tmp
+
             let ridx = rom.setchrrom_state[page]
-            let vv = vrams[ridx, *]
+            let vv = rom.chrrom_pages[ridx, *]
 
             for j in 0 .. (vv.Length - 1) do
                 vram[page, j] <- vv[j]
@@ -135,6 +138,7 @@ type PPU() =
 
         for i in 0..7 do
             this.set_chr_rom_data1k (i, num + i, rom)
+        ()
 
     member this.run(cpuclock: int) =
         let mutable tmpx = ppux
