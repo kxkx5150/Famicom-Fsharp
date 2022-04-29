@@ -1,5 +1,5 @@
 module PPU
-
+open Irq
 open ROM
 open COLOR
 
@@ -66,10 +66,6 @@ type PPU() =
         this.clear_arryas ()
 
     member this.clear_arryas() =
-        // self.imgdata[self.imgidx] = plt.0;
-        // self.imgdata[self.imgidx + 1] = plt.1;
-        // self.imgdata[self.imgidx + 2] = plt.2;
-        // self.imgidx += 3;
         printfn ""
 
     member this.crate_spbit_array() =
@@ -140,7 +136,7 @@ type PPU() =
             this.set_chr_rom_data1k (i, num + i, rom)
         ()
 
-    member this.run(cpuclock: int) =
+    member this.run(cpuclock: int, irq: Irq) =
         let mutable tmpx = ppux
         ppux <- ppux + cpuclock * 3
 
@@ -150,10 +146,8 @@ type PPU() =
             tmpx <- 0
             sprite_zero <- false
 
-            if line < 240 then 
-                // this.render_frame ()
-                printfn ""
-            elif line = 240 then this.in_vblank ()
+            if line < 240 then this.render_frame ()
+            elif line = 240 then this.in_vblank (irq)
             elif line = 262 then this.post_render ()
 
     // if (self.sprite_zero && (self.regs[0x02] & 0x40) != 0x40) {
@@ -168,9 +162,47 @@ type PPU() =
     // }
 
 
-    member this.render_frame() = printfn ""
+    member this.render_frame() = 
+        if this.is_screen_enable() || this.is_sprite_enable() then
+            ppu_addr <- (ppu_addr &&& 0xfbe0) ||| (ppu_addr_buffer &&& 0x041f)
 
-    member this.build_bg() = printfn ""
+            if 8 <= line && line < 232 then
+                this.build_bg()
+                // this.build_sp_line()
+                for p in 0..255 do
+                    let idx = palette[int bg_line_buffer[p]]
+                    let pal = PALLETE_TABLE[int idx];
+                    this.set_img_data(pal)
+            else 
+                for p in 0..263 do 
+                    bg_line_buffer[p] <- byte 0x10;
+                // this.build_sp_line();
+
+            if (ppu_addr &&& 0x7000) = 0x7000 then
+                ppu_addr <- ppu_addr &&& 0x8fff;
+                if (ppu_addr &&& 0x03e0) = 0x03a0 then
+                    ppu_addr <- (ppu_addr ^^^ 0x0800) &&& 0xfc1f
+                elif (ppu_addr &&& 0x03e0) = 0x03e0 then
+                    ppu_addr <- ppu_addr &&& 0xfc1f
+                else
+                    ppu_addr <- ppu_addr + 0x0020
+            else
+                ppu_addr <- ppu_addr + 0x1000
+            
+        elif 8 <= line && line < 232 then
+            let pal = PALLETE_TABLE[int palette[0x10]]
+            for x in 0..255 do
+                this.set_img_data(pal)
+            
+    member this.build_bg() = 
+        if (regs[0x01] &&& byte 0x08) <> byte 0x08 then
+            for p in 0..263 do 
+                bg_line_buffer[p] <- byte 0x10;
+        else
+            // this.build_bg_line();
+            if (regs[0x01] &&& byte 0x02) <> byte 0x02 then
+                for p in 0..7 do 
+                    bg_line_buffer[p] <- byte 0x10;
 
     member this.build_bg_line() = printfn ""
 
@@ -178,18 +210,13 @@ type PPU() =
 
 
 
-
-
-
-
-    member this.in_vblank() =
+    member this.in_vblank(irq: Irq) =
         scroll_reg_flg <- false
         regs[0x02] <- regs[0x02] &&& byte 0x1f
         regs[0x02] <- regs[0x02] ||| byte 0x80
 
         if (regs[0x00] &&& byte 0x80) = byte 0x80 then
-            // irq.set_nmi(true);
-            ()
+            irq.nmi <- true
 
     member this.post_render() =
         line <- 0
@@ -201,7 +228,11 @@ type PPU() =
         regs[0x02] <- regs[0x02] &&& byte 0x7f
         imgok <- true
 
-    member this.set_img_data() = printfn ""
+    member this.set_img_data((a:int, b:int, c:int)) = 
+        imgdata[imgidx] <- byte a
+        imgdata[imgidx + 1] <- byte b
+        imgdata[imgidx + 2] <- byte c
+        imgidx <- imgidx + 3;
 
     member this.clear_img() =
         imgidx <- 0
@@ -256,6 +287,8 @@ type PPU() =
 
     member this.write_ppu_ctrl1_reg(value: byte) = 
         regs[0x01] <- value
+        if this.is_screen_enable() then
+            printfn ""
 
     member this.read_ppu_status_reg(value: byte) =
         let result = regs[0x02]

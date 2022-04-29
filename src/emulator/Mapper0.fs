@@ -23,6 +23,3 @@ type Mapper0(rom': Rom, ppu': PPU) =
     member this.init(rom: byte array) = 
         printfn "mapper init"
         ppu'.init()
-
-    member this.runPpu(cpuclock: int) =
-        ppu'.run cpuclock

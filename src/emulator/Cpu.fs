@@ -1,5 +1,6 @@
 module CPU
 
+open Irq
 open MEM
 open Instructions
 
@@ -30,7 +31,6 @@ type t =
       mutable cycles: int
       mutable extra_cycles: int
       mutable steps: int
-      mutable nmi_triggered: bool
 
       mutable nestest: bool
       mutable tracing: bool
@@ -60,7 +60,6 @@ let make nestest tracing memory =
       interrupt = true
       overflow = false
       steps = -1
-      nmi_triggered = false
       tracing = tracing
       nestest = nestest
       memory = memory }
@@ -175,11 +174,11 @@ let compare_op cpu a b =
     cpu.zero <- a = b
     cpu.negative <- result > 127
 
-let nmi cpu =
+let nmi cpu (irq: Irq) =
     push_word cpu cpu.pc
     let flags = flags_to_int cpu in
     push_byte cpu flags
-    cpu.nmi_triggered <- false
+    irq.nmi <- false
     cpu.cycles <- cpu.cycles + 7
     cpu.interrupt <- true
     cpu.pc <- load_word cpu 0xFFFA
@@ -463,8 +462,8 @@ let init (cpu: byref<t>) =
         cpu.pc <- data
         &cpu
 
-let stepCpu (cpu: byref<t>) trace =
-    if cpu.nmi_triggered then nmi cpu
+let stepCpu (cpu: byref<t>) (irq: Irq) trace =
+    if irq.nmi then nmi cpu irq
     let opcode = load_byte cpu cpu.pc
     let instruction = decode_instruction cpu opcode
     if cpu.tracing then

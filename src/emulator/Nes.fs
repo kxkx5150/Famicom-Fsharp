@@ -1,5 +1,5 @@
 module NES
-
+open Irq
 open ROM
 open Mapper0
 open MEM
@@ -33,6 +33,7 @@ let trace (cpu: CPU.t) instruction opcode =
             failwith (sprintf "nestest error")
 
 type Nes() =
+    let irq = new Irq()
     let rom = new Rom()
     let ppu = new PPU()
     let mapper = new Mapper0(rom, ppu)
@@ -48,8 +49,12 @@ type Nes() =
 
     member this.runNes =
         let prev_cycles = lcpu.cycles
-        CPU.stepCpu &lcpu trace
-        let elapsed_cycles = lcpu.cycles - prev_cycles
-        mem.mapper.runPpu elapsed_cycles
+        CPU.stepCpu &lcpu irq trace
+        let cycles = lcpu.cycles - prev_cycles
+        mem.mapper.ppu.run(cycles, irq)
+        let (imgflg, imgdata) = mem.mapper.ppu.get_img_status()
+        if imgflg then
+            mem.mapper.ppu.clear_img()
+            printfn ""
 
 

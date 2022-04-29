@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <Compile Include="log.fs" />
+    <Compile Include="Irq.fs" />
     <Compile Include="Rom.fs" />
     <Compile Include="Color.fs" />
     <Compile Include="Ppu.fs" />
