@@ -146,7 +146,9 @@ type PPU() =
             tmpx <- 0
             sprite_zero <- false
 
-            if line < 240 then this.render_frame ()
+            if line < 240 then 
+                // this.render_frame ()
+                printfn ""
             elif line = 240 then this.in_vblank ()
             elif line = 262 then this.post_render ()
 
@@ -248,7 +250,8 @@ type PPU() =
             ((ppu_addr_buffer &&& 0xf3ff)
              ||| ((int value &&& 0x03) <<< 10))
 
-    member this.write_ppu_ctrl1_reg(value: byte) = regs[0x01] <- value
+    member this.write_ppu_ctrl1_reg(value: byte) = 
+        regs[0x01] <- value
 
     member this.read_ppu_status_reg(value: byte) =
         let result = regs[0x02]
@@ -270,7 +273,7 @@ type PPU() =
 
         ppu_addr_reg_flg <- not ppu_addr_reg_flg
 
-    member this.read_ppu_data_reg() =
+    member this.read_ppu_data_reg(value: byte) =
         let tmp = ppu_read_buffer
         let addr = ppu_addr &&& 0x3fff
         ppu_read_buffer <- int vram[addr >>> 10, addr &&& 0x03ff]
@@ -329,4 +332,5 @@ type PPU() =
         sprite_ram[int idx] <- value
         regs[0x03] <- (regs[0x03] + byte 1) &&& byte 0xff
 
-    member this.write_sprite_addr_reg(value: byte) = regs[0x03] <- value
+    member this.write_sprite_addr_reg(value: byte) = 
+        regs[0x03] <- value

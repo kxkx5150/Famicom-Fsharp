@@ -437,9 +437,7 @@ let exe_instruction cpu instruction =
 
 let decode_instruction cpu instruction =
     let (op, mode, cycles, extra_page_cycles) = decode instruction
-
     let (laz_args, target, size) = get_addr cpu mode extra_page_cycles
-
     let args =
         if do_read op || cpu.nestest then
             laz_args.Force()
@@ -453,20 +451,24 @@ let decode_instruction cpu instruction =
       target = target
       size = size + 1 }
 
-let initTest (cpu: byref<t>) test =
-    if test then
-        cpu.pc <- 0xC000
+
+let init (cpu: byref<t>) =
+    if cpu.nestest then
         printfn "init cpu test"
+        cpu.pc <- 0xC000
+        &cpu
     else
         printfn "init cpu"
-
-    &cpu
+        let data = load_word cpu 0xfffc
+        cpu.pc <- data
+        &cpu
 
 let stepCpu (cpu: byref<t>) trace =
     if cpu.nmi_triggered then nmi cpu
     let opcode = load_byte cpu cpu.pc
     let instruction = decode_instruction cpu opcode
-    trace cpu instruction opcode
+    if cpu.tracing then
+        trace cpu instruction opcode
 
     cpu.pc <- cpu.pc + instruction.size
     exe_instruction cpu instruction

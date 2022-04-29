@@ -8,6 +8,8 @@ type t = { rom: Rom }
 
 type Mapper0(rom': Rom, ppu': PPU) =
     inherit MapperBase()
+
+    member this.ppu = ppu'
     member this.nesrom = rom'
 
     member this.setRom(path: string) =
@@ -22,3 +24,6 @@ type Mapper0(rom': Rom, ppu': PPU) =
     member this.setPpu() =
         printfn "mapper setPpu"
         ppu'.start (this.nesrom)
+
+    member this.runPpu(cpuclock: int) =
+        ppu'.run cpuclock
