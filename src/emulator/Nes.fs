@@ -39,7 +39,6 @@ type Nes() =
     let mapper = new Mapper0(rom, ppu)
     let mem = MEM.makeRam mapper
 
-
     let mutable lcpu = CPU.make false false mem
     let _ = mem.mapper.setRom "sm.nes"
 

@@ -2,38 +2,28 @@
 
 open System.Windows.Forms
 open System.Drawing
-open System.Drawing.Imaging
-open System.IO
 open NES
 
 type NESWindow() as this =
     inherit Form()
-    do this.ClientSize <- Size(256, 240)
+    do this.ClientSize <- Size(256, 224)
     let nes = new Nes()
-    let mutable imgdata: byte array = Array.zeroCreate<byte> (256 * 240 * 3)
+    let bmp = new Bitmap(256, 224);
+    let graphic = this.CreateGraphics();
 
     let Loop =
         async {
             while true do
                 let (imgflg, imgd) = nes.runNes
-                imgdata <- imgd
                 if imgflg then
-                    this.Invalidate()
+                    let mutable i = 0;
+                    for y in [ 0 .. 224 - 1 ] do
+                        for x in [ 0 .. 256 - 1 ] do
+                            bmp.SetPixel(x, y, Color.FromArgb(int imgd[i], int imgd[i+1], int imgd[i+2]))
+                            i <- i + 3
+                    graphic.DrawImageUnscaled(bmp, 0, 0);
                     nes.clearImg
-
         }
-    member this.Draw  (args: PaintEventArgs) =
-        for y in [ 0 .. 240 - 1 ] do
-            for x in [ 0 .. 256 - 1 ] do
-                let  aaaa = new SolidBrush(Color.FromArgb(y, 0, x))
-                args.Graphics.FillRectangle(
-                    aaaa,
-                    x ,
-                    y ,
-                    1,
-                    1
-                )
-
     override this.OnFormClosing args = base.OnFormClosing args
     override this.OnShown args = 
         base.OnShown args
