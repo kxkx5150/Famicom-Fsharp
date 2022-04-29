@@ -52,9 +52,10 @@ type Nes() =
         CPU.stepCpu &lcpu irq trace
         let cycles = lcpu.cycles - prev_cycles
         mem.mapper.ppu.run(cycles, irq)
-        let (imgflg, imgdata) = mem.mapper.ppu.get_img_status()
-        if imgflg then
-            mem.mapper.ppu.clear_img()
-            printfn ""
+        mem.mapper.ppu.get_img_status()
+
+    member this.clearImg =
+        mem.mapper.ppu.clear_img()
+
 
 

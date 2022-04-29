@@ -1,4 +1,5 @@
 module PPU
+
 open Irq
 open ROM
 open COLOR
@@ -31,7 +32,7 @@ type PPU() =
     let mutable sprite_ram: byte array = Array.create 0x100 (byte 0)
     let mutable spbit_pattern = Array3D.zeroCreate<byte> 256 256 8
 
-    member this.init() = 
+    member this.init() =
         printfn "ppu init"
         this.reset
 
@@ -65,8 +66,7 @@ type PPU() =
         imgok <- false
         this.clear_arryas ()
 
-    member this.clear_arryas() =
-        printfn ""
+    member this.clear_arryas() = printfn ""
 
     member this.crate_spbit_array() =
         for i in 0 .. (256 - 1) do
@@ -134,6 +134,7 @@ type PPU() =
 
         for i in 0..7 do
             this.set_chr_rom_data1k (i, num + i, rom)
+
         ()
 
     member this.run(cpuclock: int, irq: Irq) =
@@ -146,9 +147,12 @@ type PPU() =
             tmpx <- 0
             sprite_zero <- false
 
-            if line < 240 then this.render_frame ()
-            elif line = 240 then this.in_vblank (irq)
-            elif line = 262 then this.post_render ()
+            if line < 240 then
+                this.render_frame ()
+            elif line = 240 then
+                this.in_vblank (irq)
+            elif line = 262 then
+                this.post_render ()
 
     // if (self.sprite_zero && (self.regs[0x02] & 0x40) != 0x40) {
     //     let i = if self.ppux > 255 { 255 } else { self.ppux };
@@ -162,24 +166,28 @@ type PPU() =
     // }
 
 
-    member this.render_frame() = 
-        if this.is_screen_enable() || this.is_sprite_enable() then
-            ppu_addr <- (ppu_addr &&& 0xfbe0) ||| (ppu_addr_buffer &&& 0x041f)
+    member this.render_frame() =
+        if this.is_screen_enable ()
+           || this.is_sprite_enable () then
+            ppu_addr <-
+                (ppu_addr &&& 0xfbe0)
+                ||| (ppu_addr_buffer &&& 0x041f)
 
             if 8 <= line && line < 232 then
-                this.build_bg()
+                this.build_bg ()
                 // this.build_sp_line()
                 for p in 0..255 do
                     let idx = palette[int bg_line_buffer[p]]
-                    let pal = PALLETE_TABLE[int idx];
-                    this.set_img_data(pal)
-            else 
-                for p in 0..263 do 
-                    bg_line_buffer[p] <- byte 0x10;
-                // this.build_sp_line();
+                    let pal = PALLETE_TABLE[int idx]
+                    this.set_img_data (pal)
+            else
+                for p in 0..263 do
+                    bg_line_buffer[p] <- byte 0x10
+            // this.build_sp_line();
 
             if (ppu_addr &&& 0x7000) = 0x7000 then
-                ppu_addr <- ppu_addr &&& 0x8fff;
+                ppu_addr <- ppu_addr &&& 0x8fff
+
                 if (ppu_addr &&& 0x03e0) = 0x03a0 then
                     ppu_addr <- (ppu_addr ^^^ 0x0800) &&& 0xfc1f
                 elif (ppu_addr &&& 0x03e0) = 0x03e0 then
@@ -188,21 +196,22 @@ type PPU() =
                     ppu_addr <- ppu_addr + 0x0020
             else
                 ppu_addr <- ppu_addr + 0x1000
-            
+
         elif 8 <= line && line < 232 then
             let pal = PALLETE_TABLE[int palette[0x10]]
+
             for x in 0..255 do
-                this.set_img_data(pal)
-            
-    member this.build_bg() = 
+                this.set_img_data (pal)
+
+    member this.build_bg() =
         if (regs[0x01] &&& byte 0x08) <> byte 0x08 then
-            for p in 0..263 do 
-                bg_line_buffer[p] <- byte 0x10;
+            for p in 0..263 do
+                bg_line_buffer[p] <- byte 0x10
         else
-            // this.build_bg_line();
-            if (regs[0x01] &&& byte 0x02) <> byte 0x02 then
-                for p in 0..7 do 
-                    bg_line_buffer[p] <- byte 0x10;
+        // this.build_bg_line();
+        if (regs[0x01] &&& byte 0x02) <> byte 0x02 then
+            for p in 0..7 do
+                bg_line_buffer[p] <- byte 0x10
 
     member this.build_bg_line() = printfn ""
 
@@ -228,11 +237,11 @@ type PPU() =
         regs[0x02] <- regs[0x02] &&& byte 0x7f
         imgok <- true
 
-    member this.set_img_data((a:int, b:int, c:int)) = 
+    member this.set_img_data((a: int, b: int, c: int)) =
         imgdata[imgidx] <- byte a
         imgdata[imgidx + 1] <- byte b
         imgdata[imgidx + 2] <- byte c
-        imgidx <- imgidx + 3;
+        imgidx <- imgidx + 3
 
     member this.clear_img() =
         imgidx <- 0
@@ -285,9 +294,10 @@ type PPU() =
             ((ppu_addr_buffer &&& 0xf3ff)
              ||| ((int value &&& 0x03) <<< 10))
 
-    member this.write_ppu_ctrl1_reg(value: byte) = 
+    member this.write_ppu_ctrl1_reg(value: byte) =
         regs[0x01] <- value
-        if this.is_screen_enable() then
+
+        if this.is_screen_enable () then
             printfn ""
 
     member this.read_ppu_status_reg(value: byte) =
@@ -369,5 +379,4 @@ type PPU() =
         sprite_ram[int idx] <- value
         regs[0x03] <- (regs[0x03] + byte 1) &&& byte 0xff
 
-    member this.write_sprite_addr_reg(value: byte) = 
-        regs[0x03] <- value
+    member this.write_sprite_addr_reg(value: byte) = regs[0x03] <- value
