@@ -170,9 +170,6 @@ type PPU() =
 
                 tmpx <- tmpx + 1
 
-
-
-
     member this.render_frame() =
         if this.is_screen_enable ()
            || this.is_sprite_enable () then
@@ -406,13 +403,6 @@ type PPU() =
             16
         else
             8
-
-
-
-
-
-
-
 
     member this.write_scroll_reg(value: byte) =
         regs[0x05] <- value
