@@ -73,7 +73,7 @@ type Rom() =
         if (0 < chr_rom_pcount) then
             let romlen = rom.Length
 
-            for i in 0 .. (chr_rom_pcount - 1) do
+            for i in 0 .. (chr_rom_pcount * 8 - 1) do
                 let chrrom_offset =
                     hlen
                     + prg_psize * prg_rom_pcount
@@ -82,11 +82,9 @@ type Rom() =
                 let mutable h = chrrom_offset + chr_psize / 2
                 if h > romlen then h <- romlen
                 let chr = rom[chrrom_offset..h]
-
                 for j in 0 .. (chr.Length - 1) do
                     chrrom_pages'[i, j] <- chr[j]
 
-        ()
     member this.clear_roms() = printfn "clear_roms"
 
 

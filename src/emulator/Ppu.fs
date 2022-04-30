@@ -98,6 +98,8 @@ type PPU() =
 
             for j in 0 .. (vv.Length - 1) do
                 vram[page, j] <- vv[j]
+
+            ()
         else if 0 < rom.chr_rom_page_count then
             let tmp = romPage % (rom.chr_rom_page_count * 8)
             rom.setchrrom_state[ page ] <- tmp
@@ -108,6 +110,8 @@ type PPU() =
             for j in 0 .. (vv.Length - 1) do
                 vram[page, j] <- vv[j]
 
+
+            ()
     member this.set_chrrom_pages1k
         (
             rompage0: int,
@@ -208,10 +212,10 @@ type PPU() =
             for p in 0..263 do
                 bg_line_buffer[p] <- byte 0x10
         else
-        this.build_bg_line();
-        if (regs[0x01] &&& byte 0x02) <> byte 0x02 then
-            for p in 0..7 do
-                bg_line_buffer[p] <- byte 0x10
+            this.build_bg_line();
+            if (regs[0x01] &&& byte 0x02) <> byte 0x02 then
+                for p in 0..7 do
+                    bg_line_buffer[p] <- byte 0x10
 
     member this.build_bg_line() = 
         let nameaddr = 0x2000 ||| (ppu_addr &&& 0x0fff)
@@ -225,7 +229,9 @@ type PPU() =
 
         for p in 0 .. 32 do
             let vrm = vram[pre_name_addrh, *]
-            let mutable ptndist = ((int vrm[name_addr_l]) <<< 4) ||| tableaddr
+            let ptnidx = ((int vrm[name_addr_l]) <<< 4)
+
+            let mutable ptndist = ptnidx ||| tableaddr
             let vvram = vram[(int ptndist >>> 10), *]
             ptndist <- ptndist &&& 0x03ff
 
@@ -240,6 +246,10 @@ type PPU() =
             let spbidx2 = vvram[(ptndist + 8)]
             let ptn = spbit_pattern[int spbidx1, int spbidx2, *]
 
+
+            if line = 50 && p = 5 then
+                printfn ""
+
             while s < 8 do
                 let idx = ptn[s] ||| byte attr
                 bg_line_buffer[q] <- byte PALLETE[int idx]
@@ -253,7 +263,8 @@ type PPU() =
                 pre_name_addrh <- name_addr_h
             else
                 name_addr_l <- name_addr_l + 1
-            
+        
+
 
 
     member this.build_sp_line() = printfn ""
