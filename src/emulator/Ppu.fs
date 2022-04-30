@@ -390,9 +390,12 @@ type PPU() =
 
     member this.get_img_status() =
         if imgok then
-            (true, imgdata)
+            true
         else
-            (false, imgdata)
+            false
+
+    member this.get_image_data() =
+        imgdata
 
     member this.is_screen_enable() = (regs[0x01] &&& byte 0x08) = byte 0x08
 

@@ -16,7 +16,6 @@
   <ItemGroup>
     <Content Include="icon.ico" />
     <Compile Include="Resource.fs" />
-    <Compile Include="NESWindow.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

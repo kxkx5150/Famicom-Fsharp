@@ -32,14 +32,14 @@ let trace (cpu: CPU.t) instruction opcode =
             printfn "           : %s" s1
             failwith (sprintf "nestest error")
 
-type Nes() =
+type Nes(path: string) =
     let irq = new Irq()
     let rom = new Rom()
     let ppu = new PPU()
     let mapper = new Mapper0(rom, ppu)
     let mem = MEM.makeRam mapper
     let mutable lcpu = CPU.make false false mem
-    let _ = mem.mapper.setRom "nestest.nes"
+    let _ = mem.mapper.setRom path
 
     member this.initNes = 
         let _ = CPU.init &lcpu
@@ -56,6 +56,9 @@ type Nes() =
 
         mem.mapper.ppu.run(cycles, irq)
         mem.mapper.ppu.get_img_status()
+
+    member this.get_img_data =
+        mem.mapper.ppu.get_image_data()
 
     member this.clearImg =
         mem.mapper.ppu.clear_img()
