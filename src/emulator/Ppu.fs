@@ -112,6 +112,7 @@ type PPU() =
 
 
             ()
+
     member this.set_chrrom_pages1k
         (
             rompage0: int,
@@ -139,8 +140,6 @@ type PPU() =
         for i in 0..7 do
             this.set_chr_rom_data1k (i, num + i, rom)
 
-        ()
-
     member this.run(cpuclock: int, irq: Irq) =
         let mutable tmpx = ppux
         ppux <- ppux + cpuclock * 3
@@ -158,16 +157,18 @@ type PPU() =
             elif line = 262 then
                 this.post_render ()
 
-    // if (self.sprite_zero && (self.regs[0x02] & 0x40) != 0x40) {
-    //     let i = if self.ppux > 255 { 255 } else { self.ppux };
-    //     while tmpx <= i {
-    //         if (self.sp_line_buffer[tmpx] == 0) {
-    //             self.regs[0x02] |= 0x40;
-    //             break;
-    //         }
-    //         tmpx += 1;
-    //     }
-    // }
+        if sprite_zero
+           && ((regs[0x02] &&& byte 0x40) <> byte 0x40) then
+            let mutable i = if ppux > 255 then 255 else ppux
+
+            while tmpx <= i do
+                if sp_line_buffer[tmpx] = 0 then
+                    regs[0x02] <- (regs[0x02] ||| byte 0x40)
+                    i <- 0
+
+                tmpx <- tmpx + 1
+
+
 
 
     member this.render_frame() =
@@ -179,7 +180,8 @@ type PPU() =
 
             if 8 <= line && line < 232 then
                 this.build_bg ()
-                // this.build_sp_line()
+                this.build_sp_line ()
+
                 for p in 0..255 do
                     let idx = palette[int bg_line_buffer[p]]
                     let pal = PALLETE_TABLE[int idx]
@@ -187,7 +189,8 @@ type PPU() =
             else
                 for p in 0..263 do
                     bg_line_buffer[p] <- byte 0x10
-            // this.build_sp_line();
+
+                this.build_sp_line ()
 
             if (ppu_addr &&& 0x7000) = 0x7000 then
                 ppu_addr <- ppu_addr &&& 0x8fff
@@ -212,22 +215,26 @@ type PPU() =
             for p in 0..263 do
                 bg_line_buffer[p] <- byte 0x10
         else
-            this.build_bg_line();
+            this.build_bg_line ()
+
             if (regs[0x01] &&& byte 0x02) <> byte 0x02 then
                 for p in 0..7 do
                     bg_line_buffer[p] <- byte 0x10
 
-    member this.build_bg_line() = 
+    member this.build_bg_line() =
         let nameaddr = 0x2000 ||| (ppu_addr &&& 0x0fff)
+
         let tableaddr =
-            ((ppu_addr &&& 0x7000) >>> 12) ||| (((int regs[0x00] &&& 0x10)) <<< 8)
+            ((ppu_addr &&& 0x7000) >>> 12)
+            ||| (((int regs[0x00] &&& 0x10)) <<< 8)
+
         let mutable name_addr_h = nameaddr >>> 10
         let mutable name_addr_l = nameaddr &&& 0x03ff
         let mutable pre_name_addrh = name_addr_h
         let mutable s = h_scroll_val
         let mutable q = 0
 
-        for p in 0 .. 32 do
+        for p in 0..32 do
             let vrm = vram[pre_name_addrh, *]
             let ptnidx = ((int vrm[name_addr_l]) <<< 4)
 
@@ -240,21 +247,22 @@ type PPU() =
 
             let lval2 = (name_addr_l &&& 0x0040) >>> 4
             let rval2 = name_addr_l &&& 0x0002
-            let attr = ((int (vrm[lval ||| rval]) <<< 2) >>> (lval2 ||| rval2)) &&& 0x0c;
+
+            let attr =
+                ((int (vrm[lval ||| rval]) <<< 2)
+                 >>> (lval2 ||| rval2))
+                &&& 0x0c
 
             let spbidx1 = vvram[ptndist]
             let spbidx2 = vvram[(ptndist + 8)]
             let ptn = spbit_pattern[int spbidx1, int spbidx2, *]
-
-
-            if line = 50 && p = 5 then
-                printfn ""
 
             while s < 8 do
                 let idx = ptn[s] ||| byte attr
                 bg_line_buffer[q] <- byte PALLETE[int idx]
                 q <- q + 1
                 s <- s + 1
+
             s <- 0
 
             if (name_addr_l &&& 0x001f) = 0x001f then
@@ -263,11 +271,95 @@ type PPU() =
                 pre_name_addrh <- name_addr_h
             else
                 name_addr_l <- name_addr_l + 1
-        
 
+    member this.build_sp_line() =
+        let spclip =
+            if (regs[0x01] &&& byte 0x04) = byte 0x04 then
+                0
+            else
+                8
 
+        if ((regs[0x01] &&& byte 0x10) = byte 0x10) then
+            for p in 0..263 do
+                sp_line_buffer[p] <- 256
 
-    member this.build_sp_line() = printfn ""
+            let spptableaddr = ((int regs[0x00] &&& 0x08)) <<< 9
+            let mutable count = 0
+            let bzsize = this.is_bigsize ()
+            let mutable i = 0
+            let mutable brk = false
+
+            while not brk do
+                if 252 <= i then brk <- true
+
+                let isy = (int sprite_ram[i] + 1)
+
+                if not (isy > line || (isy + bzsize <= line)) then
+                    if i = 0 then sprite_zero <- true
+                    count <- count + 1
+
+                    if count = 9 then
+                        brk <- true
+                    else
+                        let attr = int sprite_ram[i + 2]
+                        let attribute = (((attr &&& 0x03)) <<< 2) ||| 0x10
+                        let bgsp = (attr &&& 0x20) = 0x00
+
+                        let mutable x = int sprite_ram[i + 3]
+                        let mutable ex = x + 8
+                        if ex > 256 then ex <- 256
+
+                        let iy =
+                            if (attr &&& 0x80) = 0x80 then
+                                bzsize - 1 - (line - isy)
+                            else
+                                line - isy
+
+                        let lval = ((int sprite_ram[i + 1]) <<< 4) + spptableaddr
+
+                        let rval =
+                            ((int sprite_ram[i + 1] &&& 0xfe) <<< 4)
+                            + ((int sprite_ram[i + 1] &&& 0x01) <<< 12)
+
+                        let sval = if bzsize = 8 then lval else rval
+                        let tilenum = ((int iy &&& 0x08) <<< 1) + (iy &&& 0x07) + sval
+                        let tlow = tilenum &&& 0x03ff
+
+                        let mutable is = 0
+                        let mutable ia = 0
+
+                        if (attr &&& 0x40) = 0x00 then
+                            is <- 0
+                            ia <- 1
+                        else
+                            is <- 7
+                            ia <- -1
+
+                        let ptnidxl = vram[tilenum >>> 10, *][tlow]
+                        let ptnidxr = vram[tilenum >>> 10, *][tlow + 8]
+                        let ptn = spbit_pattern[int ptnidxl, int ptnidxr, *]
+
+                        while x < ex do
+                            let tptn = int ptn[is]
+
+                            if (tptn <> 0x00) && (sp_line_buffer[x] = 256) then
+                                sp_line_buffer[x] <- i
+
+                                if x >= spclip
+                                   && (bgsp || bg_line_buffer[x] = byte 0x10) then
+                                    bg_line_buffer[x] <- byte (tptn ||| attribute)
+
+                            x <- x + 1
+                            is <- is + ia
+
+                        printfn ""
+
+                i <- i + 4
+
+            if 8 <= count then
+                regs[0x02] <- regs[0x02] ||| byte 0x20
+            else
+                regs[0x02] <- regs[0x02] &&& byte 0xdf
 
 
 
