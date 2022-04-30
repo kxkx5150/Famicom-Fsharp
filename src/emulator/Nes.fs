@@ -38,7 +38,6 @@ type Nes() =
     let ppu = new PPU()
     let mapper = new Mapper0(rom, ppu)
     let mem = MEM.makeRam mapper
-
     let mutable lcpu = CPU.make false false mem
     let _ = mem.mapper.setRom "sm.nes"
 
@@ -49,7 +48,12 @@ type Nes() =
     member this.runNes =
         let prev_cycles = lcpu.cycles
         CPU.stepCpu &lcpu irq trace
-        let cycles = lcpu.cycles - prev_cycles
+        let mutable cycles = lcpu.cycles - prev_cycles
+
+        if mem.dma.get_status() then
+            mem.dma.clear();
+            cycles <- cycles + 514
+
         mem.mapper.ppu.run(cycles, irq)
         mem.mapper.ppu.get_img_status()
 

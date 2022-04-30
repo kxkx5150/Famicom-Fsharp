@@ -32,6 +32,8 @@ type PPU() =
     let mutable sprite_ram: byte array = Array.create 0x100 (byte 0)
     let mutable spbit_pattern = Array3D.zeroCreate<byte> 256 256 8
 
+    member this.sprite_ram' = sprite_ram
+
     member this.init() =
         printfn "ppu init"
         this.reset
@@ -352,8 +354,6 @@ type PPU() =
                             x <- x + 1
                             is <- is + ia
 
-                        printfn ""
-
                 i <- i + 4
 
             if 8 <= count then
@@ -438,11 +438,7 @@ type PPU() =
             ((ppu_addr_buffer &&& 0xf3ff)
              ||| ((int value &&& 0x03) <<< 10))
 
-    member this.write_ppu_ctrl1_reg(value: byte) =
-        regs[0x01] <- value
-
-        if this.is_screen_enable () then
-            printfn ""
+    member this.write_ppu_ctrl1_reg(value: byte) = regs[0x01] <- value
 
     member this.read_ppu_status_reg(value: byte) =
         let result = regs[0x02]

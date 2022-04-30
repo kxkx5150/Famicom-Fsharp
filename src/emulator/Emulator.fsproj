@@ -12,6 +12,7 @@
     <Compile Include="Ppu.fs" />
     <Compile Include="Mapper.fs" />
     <Compile Include="Mapper0.fs" />
+    <Compile Include="Dma.fs" />
     <Compile Include="Mem.fs" />
     <Compile Include="instructions.fs" />
     <Compile Include="Cpu.fs" />

@@ -437,6 +437,7 @@ let exe_instruction cpu instruction =
 let decode_instruction cpu instruction =
     let (op, mode, cycles, extra_page_cycles) = decode instruction
     let (laz_args, target, size) = get_addr cpu mode extra_page_cycles
+
     let args =
         if do_read op || cpu.nestest then
             laz_args.Force()
@@ -466,6 +467,7 @@ let stepCpu (cpu: byref<t>) (irq: Irq) trace =
     if irq.nmi then nmi cpu irq
     let opcode = load_byte cpu cpu.pc
     let instruction = decode_instruction cpu opcode
+
     if cpu.tracing then
         trace cpu instruction opcode
 

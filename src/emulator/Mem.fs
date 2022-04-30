@@ -1,17 +1,22 @@
 module MEM
 
 open Mapper0
+open Dma
 
-type t = { mapper: Mapper0; ram: int array }
+type t =
+    { mapper: Mapper0
+      dma: Dma
+      ram: int array }
 
 let makeRam mapper =
+
     { mapper = mapper
+      dma = new Dma()
       ram = Array.zeroCreate 0x0800 }
 
 let load m addr =
     match (addr &&& 0xe000) with
-    | 0x0000 -> 
-        m.ram[addr &&& 0x7ff]
+    | 0x0000 -> m.ram[addr &&& 0x7ff]
     | 0x2000 ->
         match (addr &&& 0x07) with
         | 0x0002 -> int (m.mapper.ppu.read_ppu_status_reg (byte addr))
@@ -27,8 +32,7 @@ let load m addr =
 
 let store m addr data =
     match (addr &&& 0xe000) with
-    | 0x0000 -> 
-        m.ram.[addr &&& 0x7FF] <- data
+    | 0x0000 -> m.ram.[addr &&& 0x7FF] <- data
     | 0x2000 ->
         match (addr &&& 0x07) with
         | 0x00 -> m.mapper.ppu.write_ppu_ctrl0_reg (byte data)
@@ -40,7 +44,10 @@ let store m addr data =
         | 0x06 -> m.mapper.ppu.write_ppu_addr_reg (byte data)
         | 0x07 -> m.mapper.ppu.write_ppu_data_reg (byte data)
         | _ -> ()
-    | 0x4000 -> ()
+    | 0x4000 ->
+        match (addr) with
+        | 0x4014 -> m.dma.run (data, m.ram, m.mapper.ppu)
+        | _ -> ()
     | 0x6000 -> ()
     | 0x8000 -> m.mapper.write (0, (addr &&& 0x1fff))
     | 0xa000 -> m.mapper.write (1, (addr &&& 0x1fff))
