@@ -15,11 +15,16 @@
 
   <ItemGroup>
     <Content Include="icon.ico" />
+    <Compile Include="SDL.fs" />
     <Compile Include="Resource.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="SDL2.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="NAudio" Version="2.0.1" />

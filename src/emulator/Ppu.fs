@@ -1,5 +1,5 @@
 module PPU
-
+open System
 open Irq
 open ROM
 open COLOR
@@ -9,6 +9,11 @@ type PPU() =
     let mutable line: int = 0
     let mutable regs: byte array = Array.zeroCreate<byte> 8
     let mutable imgdata: byte array = Array.zeroCreate<byte> (256 * 240 * 3)
+
+    // let asUint32 (r, g, b) = BitConverter.ToUInt32 (ReadOnlySpan [|b; g; r; 255uy|])
+    // let mutable imgdata = Array.create (256 * 240) (asUint32 (0uy, 0uy, 0uy))
+
+
     let mutable imgok: bool = false
     let mutable imgidx: int = 0
     let mutable rcount: int = 0
@@ -379,10 +384,11 @@ type PPU() =
         imgok <- true
 
     member this.set_img_data((a: int, b: int, c: int)) =
+        // let _ = imgdata[imgidx] = (asUint32 (byte a, byte b, byte c))
         imgdata[imgidx] <- byte a
         imgdata[imgidx + 1] <- byte b
         imgdata[imgidx + 2] <- byte c
-        imgidx <- imgidx + 3
+        imgidx <- imgidx + 1
 
     member this.clear_img() =
         imgidx <- 0
