@@ -164,8 +164,7 @@ type PPU() =
             elif line = 262 then
                 this.post_render ()
 
-        if sprite_zero
-           && ((regs[0x02] &&& byte 0x40) <> byte 0x40) then
+        if sprite_zero && ((regs[0x02] &&& byte 0x40) <> byte 0x40) then
             let mutable i = if ppux > 255 then 255 else ppux
 
             while tmpx <= i do
