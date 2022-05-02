@@ -1,10 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>Fsharp_SDL2</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="SDL.fs" />
     <Compile Include="log.fs" />
     <Compile Include="Irq.fs" />
     <Compile Include="Rom.fs" />
@@ -17,5 +20,13 @@
     <Compile Include="instructions.fs" />
     <Compile Include="Cpu.fs" />
     <Compile Include="Nes.fs" />
+    <Compile Include="Program.fs" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="SDL2.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

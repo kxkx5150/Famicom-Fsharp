@@ -16,10 +16,14 @@ type SDL_WindowFlags =
 
 let SDL_TEXTUREACCESS_STREAMING = 1
 let SDL_PIXELFORMAT_ARGB8888 = 372645892u
+let SDL_PIXELFORMAT_RGB24 = 386930691u
 
+
+let SDL_QUIT = 0x100u
 let SDL_KEYDOWN = 0x300u
 let SDL_KEYUP = 769u
 let SDLK_ESCAPE = 27u
+let SDLK_BACKSPACE = 8u
 
 [<type:StructLayout(LayoutKind.Sequential)>]
 type SDL_Keysym = {

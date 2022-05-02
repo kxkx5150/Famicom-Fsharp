@@ -9,7 +9,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/src/winforms/bin/Debug/net6.0-windows/Winforms.dll",
+            "program": "${workspaceFolder}/Famicom-Fsharp/bin/Debug/net6.0/Famicom-Fsharp.dll",
             "args": [],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
