@@ -10,7 +10,10 @@ NES Emulator written in F#
 <br>
 
 
-![cap](https://user-images.githubusercontent.com/10168979/166110910-bf28c843-0dfe-4509-aff9-5ec1ab47936b.PNG)
+
+
+https://user-images.githubusercontent.com/10168979/168141015-8c488a3a-fd60-4f64-b07e-1a0f85bdf900.mp4
+
 
 
 
