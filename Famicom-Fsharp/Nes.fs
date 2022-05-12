@@ -83,7 +83,7 @@ type Nes(path: string) =
                     // while i < 256*224-1 do
                     //     let aaaa = asUint32(rgbary[i*3], rgbary[i*3+1],rgbary[i*3+2])
                     //     frameBuffer.[i] <- aaaa
-                        // i <- i + 2
+                    //     i <- i + 1
 
                     SDL_UpdateTexture(texture, IntPtr.Zero, bufferPtr, width * 4) |> ignore
                     SDL_RenderClear(renderer) |> ignore

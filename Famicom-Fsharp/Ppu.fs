@@ -1,4 +1,5 @@
 module PPU
+
 open System
 open Irq
 open ROM
@@ -37,92 +38,89 @@ type PPU() =
     let mutable sprite_ram: byte array = Array.create 0x100 (byte 0)
     let mutable spbit_pattern = Array3D.zeroCreate<byte> 256 256 8
 
-    let PALLETE:byte array =
-        [| 
-        10uy
-        0x01uy
-        0x02uy
-        0x03uy
-        0x10uy
-        0x05uy
-        0x06uy
-        0x07uy
-        0x10uy
-        0x09uy
-        0x0auy
-        0x0buy
-        0x10uy
-        0x0duy
-        0x0euy
-        0x0fuy
-        |]
-    let PALLETE_TABLE: byte array array=
-        [| 
-        [|101uy; 101uy; 101uy |]
-        [|0uy; 45uy; 105uy |]
-        [|19uy; 31uy; 127uy |]
-        [|60uy; 19uy; 124uy |]
-        [|96uy; 11uy; 98uy |]
-        [|115uy; 10uy; 55uy |]
-        [|113uy; 15uy; 7uy |]
-        [|90uy; 26uy; 0uy |]
-        [|52uy; 40uy; 0uy |]
-        [|11uy; 52uy; 0uy |]
-        [|0uy; 60uy; 0uy |]
-        [|0uy; 61uy; 16uy |]
-        [|0uy; 56uy; 64uy |]
-        [|0uy; 0uy; 0uy |]
-        [|0uy; 0uy; 0uy |]
-        [|0uy; 0uy; 0uy |]
-        [|174uy; 174uy; 174uy |]
-        [|15uy; 99uy; 179uy |]
-        [|64uy; 81uy; 208uy |]
-        [|120uy; 65uy; 204uy |]
-        [|167uy; 54uy; 169uy |]
-        [|192uy; 52uy; 112uy |]
-        [|189uy; 60uy; 48uy |]
-        [|159uy; 74uy; 0uy |]
-        [|109uy; 92uy; 0uy |]
-        [|54uy; 109uy; 0uy |]
-        [|7uy; 119uy; 4uy |]
-        [|0uy; 121uy; 61uy |]
-        [|0uy; 114uy; 125uy |]
-        [|0uy; 0uy; 0uy |]
-        [|0uy; 0uy; 0uy |]
-        [|0uy; 0uy; 0uy |]
-        [|254uy; 254uy; 255uy |]
-        [|93uy; 179uy; 255uy |]
-        [|143uy; 161uy; 255uy |]
-        [|200uy; 144uy; 255uy |]
-        [|247uy; 133uy; 250uy |]
-        [|255uy; 131uy; 192uy |]
-        [|255uy; 139uy; 127uy |]
-        [|239uy; 154uy; 73uy |]
-        [|189uy; 172uy; 44uy |]
-        [|133uy; 188uy; 47uy |]
-        [|85uy; 199uy; 83uy |]
-        [|60uy; 201uy; 140uy |]
-        [|62uy; 194uy; 205uy |]
-        [|78uy; 78uy; 78uy |]
-        [|0uy; 0uy; 0uy |]
-        [|0uy; 0uy; 0uy |]
-        [|254uy; 254uy; 255uy |]
-        [|188uy; 223uy; 255uy |]
-        [|209uy; 216uy; 255uy |]
-        [|232uy; 209uy; 255uy |]
-        [|251uy; 205uy; 253uy |]
-        [|255uy; 204uy; 229uy |]
-        [|255uy; 207uy; 202uy |]
-        [|248uy; 213uy; 180uy |]
-        [|228uy; 220uy; 168uy |]
-        [|204uy; 227uy; 169uy |]
-        [|185uy; 232uy; 184uy |]
-        [|174uy; 232uy; 208uy |]
-        [|175uy; 229uy; 234uy |]
-        [|182uy; 182uy; 182uy |]
-        [|0uy; 0uy; 0uy |]
-        [|0uy; 0uy; 0uy |] 
-        |]
+    let PALLETE: byte array =
+        [| 10uy
+           0x01uy
+           0x02uy
+           0x03uy
+           0x10uy
+           0x05uy
+           0x06uy
+           0x07uy
+           0x10uy
+           0x09uy
+           0x0auy
+           0x0buy
+           0x10uy
+           0x0duy
+           0x0euy
+           0x0fuy |]
+
+    let PALLETE_TABLE: byte array array =
+        [| [| 101uy; 101uy; 101uy |]
+           [| 0uy; 45uy; 105uy |]
+           [| 19uy; 31uy; 127uy |]
+           [| 60uy; 19uy; 124uy |]
+           [| 96uy; 11uy; 98uy |]
+           [| 115uy; 10uy; 55uy |]
+           [| 113uy; 15uy; 7uy |]
+           [| 90uy; 26uy; 0uy |]
+           [| 52uy; 40uy; 0uy |]
+           [| 11uy; 52uy; 0uy |]
+           [| 0uy; 60uy; 0uy |]
+           [| 0uy; 61uy; 16uy |]
+           [| 0uy; 56uy; 64uy |]
+           [| 0uy; 0uy; 0uy |]
+           [| 0uy; 0uy; 0uy |]
+           [| 0uy; 0uy; 0uy |]
+           [| 174uy; 174uy; 174uy |]
+           [| 15uy; 99uy; 179uy |]
+           [| 64uy; 81uy; 208uy |]
+           [| 120uy; 65uy; 204uy |]
+           [| 167uy; 54uy; 169uy |]
+           [| 192uy; 52uy; 112uy |]
+           [| 189uy; 60uy; 48uy |]
+           [| 159uy; 74uy; 0uy |]
+           [| 109uy; 92uy; 0uy |]
+           [| 54uy; 109uy; 0uy |]
+           [| 7uy; 119uy; 4uy |]
+           [| 0uy; 121uy; 61uy |]
+           [| 0uy; 114uy; 125uy |]
+           [| 0uy; 0uy; 0uy |]
+           [| 0uy; 0uy; 0uy |]
+           [| 0uy; 0uy; 0uy |]
+           [| 254uy; 254uy; 255uy |]
+           [| 93uy; 179uy; 255uy |]
+           [| 143uy; 161uy; 255uy |]
+           [| 200uy; 144uy; 255uy |]
+           [| 247uy; 133uy; 250uy |]
+           [| 255uy; 131uy; 192uy |]
+           [| 255uy; 139uy; 127uy |]
+           [| 239uy; 154uy; 73uy |]
+           [| 189uy; 172uy; 44uy |]
+           [| 133uy; 188uy; 47uy |]
+           [| 85uy; 199uy; 83uy |]
+           [| 60uy; 201uy; 140uy |]
+           [| 62uy; 194uy; 205uy |]
+           [| 78uy; 78uy; 78uy |]
+           [| 0uy; 0uy; 0uy |]
+           [| 0uy; 0uy; 0uy |]
+           [| 254uy; 254uy; 255uy |]
+           [| 188uy; 223uy; 255uy |]
+           [| 209uy; 216uy; 255uy |]
+           [| 232uy; 209uy; 255uy |]
+           [| 251uy; 205uy; 253uy |]
+           [| 255uy; 204uy; 229uy |]
+           [| 255uy; 207uy; 202uy |]
+           [| 248uy; 213uy; 180uy |]
+           [| 228uy; 220uy; 168uy |]
+           [| 204uy; 227uy; 169uy |]
+           [| 185uy; 232uy; 184uy |]
+           [| 174uy; 232uy; 208uy |]
+           [| 175uy; 229uy; 234uy |]
+           [| 182uy; 182uy; 182uy |]
+           [| 0uy; 0uy; 0uy |]
+           [| 0uy; 0uy; 0uy |] |]
 
 
 
@@ -131,6 +129,7 @@ type PPU() =
 
 
     member this.sprite_ram' = sprite_ram
+
     member this.init() =
         printfn "ppu init"
         this.reset
@@ -256,15 +255,15 @@ type PPU() =
             elif line = 262 then
                 this.post_render ()
 
-        // if sprite_zero && ((regs[0x02] &&& byte 0x40) <> byte 0x40) then
-        //     let mutable i = if ppux > 255 then 255 else ppux
+        if sprite_zero && ((regs[0x02] &&& byte 0x40) <> byte 0x40) then
+            let mutable i = if ppux > 255 then 255 else ppux
 
-        //     while tmpx <= i do
-        //         if sp_line_buffer[tmpx] = 0 then
-        //             regs[0x02] <- (regs[0x02] ||| byte 0x40)
-        //             i <- 0
+            while tmpx <= i do
+                if sp_line_buffer[tmpx] = 0 then
+                    regs[0x02] <- (regs[0x02] ||| byte 0x40)
+                    i <- 0
 
-        //         tmpx <- tmpx + 1
+                tmpx <- tmpx + 1
 
     member this.render_frame() =
         if this.is_screen_enable ()
@@ -285,7 +284,7 @@ type PPU() =
                 for p in 0..263 do
                     bg_line_buffer[p] <- byte 0x10
 
-                // this.build_sp_line ()
+            // this.build_sp_line ()
 
             if (ppu_addr &&& 0x7000) = 0x7000 then
                 ppu_addr <- ppu_addr &&& 0x8fff
@@ -301,6 +300,7 @@ type PPU() =
 
         elif 8 <= line && line < 232 then
             let pal = PALLETE_TABLE[int palette[0x10]]
+
             for x in 0..255 do
                 this.set_img_data (pal[0], pal[1], pal[2])
 
@@ -318,6 +318,7 @@ type PPU() =
 
     member this.build_bg_line() =
         let nameaddr = 0x2000 ||| (ppu_addr &&& 0x0fff)
+
         let tableaddr =
             ((ppu_addr &&& 0x7000) >>> 12)
             ||| (((int regs[0x00] &&& 0x10)) <<< 8)
@@ -344,11 +345,14 @@ type PPU() =
                  >>> (lval2 ||| rval2))
                 &&& 0x0c
 
-            let spbidx1 =  vram[(int ptndist >>> 10), ptndist]
-            let spbidx2 =  vram[(int ptndist >>> 10), (ptndist + 8)]
+            let spbidx1 = vram[(int ptndist >>> 10), ptndist]
+            let spbidx2 = vram[(int ptndist >>> 10), (ptndist + 8)]
 
             while s < 8 do
-                let idx = spbit_pattern[int spbidx1, int spbidx2, s] ||| byte attr
+                let idx =
+                    spbit_pattern[int spbidx1, int spbidx2, s]
+                    ||| byte attr
+
                 bg_line_buffer[q] <- byte PALLETE[int idx]
                 q <- q + 1
                 s <- s + 1
@@ -452,7 +456,6 @@ type PPU() =
                 regs[0x02] <- regs[0x02] &&& byte 0xdf
 
 
-
     member this.in_vblank(irq: Irq) =
         scroll_reg_flg <- false
         regs[0x02] <- regs[0x02] &&& byte 0x1f
@@ -475,20 +478,15 @@ type PPU() =
         imgdata[imgidx] <- a
         imgdata[imgidx + 1] <- b
         imgdata[imgidx + 2] <- c
-        imgidx <- imgidx + 1
+        imgidx <- imgidx + 3
 
     member this.clear_img() =
         imgidx <- 0
         imgok <- false
 
-    member this.get_img_status() =
-        if imgok then
-            true
-        else
-            false
+    member this.get_img_status() = if imgok then true else false
 
-    member this.get_image_data() =
-        imgdata
+    member this.get_image_data() = imgdata
 
     member this.is_screen_enable() = (regs[0x01] &&& byte 0x08) = byte 0x08
 
