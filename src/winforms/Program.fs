@@ -26,8 +26,10 @@ let main argv =
     let screenBuffer = Array.create (SCREEN_WIDTH * SCREEN_HEIGHT) 0
     form.ClientSize <- new System.Drawing.Size(SCREEN_WIDTH, SCREEN_HEIGHT)
     let mutable drawflg = false
-    let nes = new Nes("nestest.nes")
+    let nes = new Nes("sm.nes")
     let mutable rgbarray: byte array = Array.zeroCreate<byte> (256 * 240 * 3)
+    let mutable lastTick = 0
+    let mutable frameRate = 0
 
     let Loop =
         async {
@@ -38,6 +40,12 @@ let main argv =
                     nes.clearImg
                     drawflg <- true
                     form.Invalidate()
+
+                // frameRate<- frameRate+1
+                // if (System.Environment.TickCount - lastTick) >= 1000 then
+                //     printfn "%d" frameRate
+                //     frameRate <- 0
+                //     lastTick <- System.Environment.TickCount
         }
     let Draw (args: PaintEventArgs) =
         if drawflg then

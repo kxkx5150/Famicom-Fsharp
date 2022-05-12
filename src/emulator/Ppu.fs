@@ -234,12 +234,10 @@ type PPU() =
         let mutable q = 0
 
         for p in 0..32 do
-            let vrm = vram[pre_name_addrh, *]
-            let ptnidx = ((int vrm[name_addr_l]) <<< 4)
+            let ptnidx = ((int vram[pre_name_addrh, name_addr_l]) <<< 4)
 
-            let mutable ptndist = ptnidx ||| tableaddr
-            let vvram = vram[(int ptndist >>> 10), *]
-            ptndist <- ptndist &&& 0x03ff
+            let ptndist = ptnidx ||| tableaddr
+            let ptndist2 = ptndist &&& 0x03ff
 
             let lval = (name_addr_l &&& 0x0380) >>> 4
             let rval = ((name_addr_l &&& 0x001c) >>> 2) + 0x03c0
@@ -248,16 +246,19 @@ type PPU() =
             let rval2 = name_addr_l &&& 0x0002
 
             let attr =
-                ((int (vrm[lval ||| rval]) <<< 2)
+                ((int (vram[pre_name_addrh, lval ||| rval]) <<< 2)
                  >>> (lval2 ||| rval2))
                 &&& 0x0c
 
-            let spbidx1 = vvram[ptndist]
-            let spbidx2 = vvram[(ptndist + 8)]
-            let ptn = spbit_pattern[int spbidx1, int spbidx2, *]
+            let spidx = ptndist >>> 10
+            let spbidx1 = vram[spidx, ptndist2]
+            let spbidx2 = vram[spidx, ptndist2 + 8]
 
             while s < 8 do
-                let idx = ptn[s] ||| byte attr
+                let idx =
+                    spbit_pattern[int spbidx1, int spbidx2, s]
+                    ||| byte attr
+
                 bg_line_buffer[q] <- byte PALLETE[int idx]
                 q <- q + 1
                 s <- s + 1
@@ -270,6 +271,8 @@ type PPU() =
                 pre_name_addrh <- name_addr_h
             else
                 name_addr_l <- name_addr_l + 1
+
+
 
     member this.build_sp_line() =
         let spclip =
@@ -334,12 +337,11 @@ type PPU() =
                             is <- 7
                             ia <- -1
 
-                        let ptnidxl = vram[tilenum >>> 10, *][tlow]
-                        let ptnidxr = vram[tilenum >>> 10, *][tlow + 8]
-                        let ptn = spbit_pattern[int ptnidxl, int ptnidxr, *]
+                        let ptnidxl = vram[tilenum >>> 10, tlow]
+                        let ptnidxr = vram[tilenum >>> 10, tlow + 8]
 
                         while x < ex do
-                            let tptn = int ptn[is]
+                            let tptn = int spbit_pattern[int ptnidxl, int ptnidxr, is]
 
                             if (tptn <> 0x00) && (sp_line_buffer[x] = 256) then
                                 sp_line_buffer[x] <- i
@@ -388,14 +390,9 @@ type PPU() =
         imgidx <- 0
         imgok <- false
 
-    member this.get_img_status() =
-        if imgok then
-            true
-        else
-            false
+    member this.get_img_status() = if imgok then true else false
 
-    member this.get_image_data() =
-        imgdata
+    member this.get_image_data() = imgdata
 
     member this.is_screen_enable() = (regs[0x01] &&& byte 0x08) = byte 0x08
 
