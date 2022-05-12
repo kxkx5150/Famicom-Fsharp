@@ -26,7 +26,7 @@ let main argv =
     let screenBuffer = Array.create (SCREEN_WIDTH * SCREEN_HEIGHT) 0
     form.ClientSize <- new System.Drawing.Size(SCREEN_WIDTH*SCALE, SCREEN_HEIGHT*SCALE)
     let mutable drawflg = false
-    let nes = new Nes("sm.nes")
+    let nes = new Nes("j.nes")
     let mutable rgbarray: byte array = Array.zeroCreate<byte> (256 * 240 * 3)
     let mutable lastTick = 0
     let mutable frameRate = 0
