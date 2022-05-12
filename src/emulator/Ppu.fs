@@ -321,6 +321,7 @@ type PPU() =
         let tableaddr =
             ((ppu_addr &&& 0x7000) >>> 12)
             ||| (((int regs[0x00] &&& 0x10)) <<< 8)
+
         let mutable name_addr_h = nameaddr >>> 10
         let mutable name_addr_l = nameaddr &&& 0x03ff
         let mutable pre_name_addrh = name_addr_h
@@ -328,12 +329,10 @@ type PPU() =
         let mutable q = 0
 
         for p in 0..32 do
-            let vrm = vram[pre_name_addrh, *]
-            let ptnidx = ((int vrm[name_addr_l]) <<< 4)
+            let ptnidx = ((int vram[pre_name_addrh, name_addr_l]) <<< 4)
 
-            let mutable ptndist = ptnidx ||| tableaddr
-            let vvram = vram[(int ptndist >>> 10), *]
-            ptndist <- ptndist &&& 0x03ff
+            let ptndist = ptnidx ||| tableaddr
+            let ptndist2 = ptndist &&& 0x03ff
 
             let lval = (name_addr_l &&& 0x0380) >>> 4
             let rval = ((name_addr_l &&& 0x001c) >>> 2) + 0x03c0
@@ -342,16 +341,15 @@ type PPU() =
             let rval2 = name_addr_l &&& 0x0002
 
             let attr =
-                ((int (vrm[lval ||| rval]) <<< 2)
+                ((int (vram[pre_name_addrh, lval ||| rval]) <<< 2)
                  >>> (lval2 ||| rval2))
                 &&& 0x0c
 
-            let spbidx1 = vvram[ptndist]
-            let spbidx2 = vvram[(ptndist + 8)]
-            let ptn = spbit_pattern[int spbidx1, int spbidx2, *]
+            let spbidx1 = vram[(int ptndist >>> 10), ptndist2]
+            let spbidx2 = vram[(int ptndist >>> 10), ptndist2+8]
 
             while s < 8 do
-                let idx = ptn[s] ||| byte attr
+                let idx = spbit_pattern[int spbidx1, int spbidx2, s] ||| byte attr
                 bg_line_buffer[q] <- byte PALLETE[int idx]
                 q <- q + 1
                 s <- s + 1
