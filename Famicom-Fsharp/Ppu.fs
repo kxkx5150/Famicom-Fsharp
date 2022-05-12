@@ -329,44 +329,40 @@ type PPU() =
         let mutable q = 0
 
         for p in 0..32 do
-            let vrm = vram[pre_name_addrh, *]
-            let ptnidx = ((int vrm[name_addr_l]) <<< 4)
+            let ptnidx = ((int vram[pre_name_addrh, name_addr_l]) <<< 4)
+            let mutable ptndist = ptnidx ||| tableaddr
+            ptndist <- ptndist &&& 0x03ff
 
-        //     let mutable ptndist = ptnidx ||| tableaddr
-        //     let vvram = vram[(int ptndist >>> 10), *]
-        //     ptndist <- ptndist &&& 0x03ff
+            let lval = (name_addr_l &&& 0x0380) >>> 4
+            let rval = ((name_addr_l &&& 0x001c) >>> 2) + 0x03c0
 
-        //     let lval = (name_addr_l &&& 0x0380) >>> 4
-        //     let rval = ((name_addr_l &&& 0x001c) >>> 2) + 0x03c0
+            let lval2 = (name_addr_l &&& 0x0040) >>> 4
+            let rval2 = name_addr_l &&& 0x0002
 
-        //     let lval2 = (name_addr_l &&& 0x0040) >>> 4
-        //     let rval2 = name_addr_l &&& 0x0002
+            let attr =
+                ((int (vram[pre_name_addrh, lval ||| rval]) <<< 2)
+                 >>> (lval2 ||| rval2))
+                &&& 0x0c
 
-        //     let attr =
-        //         ((int (vrm[lval ||| rval]) <<< 2)
-        //          >>> (lval2 ||| rval2))
-        //         &&& 0x0c
+            let spbidx1 =  vram[(int ptndist >>> 10), ptndist]
+            let spbidx2 =  vram[(int ptndist >>> 10), (ptndist + 8)]
 
-        //     let spbidx1 = vvram[ptndist]
-        //     let spbidx2 = vvram[(ptndist + 8)]
-        //     let ptn = spbit_pattern[int spbidx1, int spbidx2, *]
+            while s < 8 do
+                let idx = spbit_pattern[int spbidx1, int spbidx2, s] ||| byte attr
+                bg_line_buffer[q] <- byte PALLETE[int idx]
+                q <- q + 1
+                s <- s + 1
 
-        //     while s < 8 do
-        //         let idx = ptn[s] ||| byte attr
-        //         bg_line_buffer[q] <- byte PALLETE[int idx]
-        //         q <- q + 1
-        //         s <- s + 1
+            s <- 0
 
-        //     s <- 0
+            if (name_addr_l &&& 0x001f) = 0x001f then
+                name_addr_l <- name_addr_l &&& 0xffe0
+                name_addr_h <- name_addr_h ^^^ 0x01
+                pre_name_addrh <- name_addr_h
+            else
+                name_addr_l <- name_addr_l + 1
 
-        //     if (name_addr_l &&& 0x001f) = 0x001f then
-        //         name_addr_l <- name_addr_l &&& 0xffe0
-        //         name_addr_h <- name_addr_h ^^^ 0x01
-        //         pre_name_addrh <- name_addr_h
-        //     else
-        //         name_addr_l <- name_addr_l + 1
-            ()
-        ()
+
 
     member this.build_sp_line() =
         let spclip =
@@ -476,12 +472,10 @@ type PPU() =
         imgok <- true
 
     member this.set_img_data(a: byte, b: byte, c: byte) =
-        // let _ = imgdata[imgidx] = (asUint32 (byte a, byte b, byte c))
-        // imgdata[imgidx] <- byte a
-        // imgdata[imgidx + 1] <- byte b
-        // imgdata[imgidx + 2] <- byte c
-        // imgidx <- imgidx + 1
-        ()
+        imgdata[imgidx] <- a
+        imgdata[imgidx + 1] <- b
+        imgdata[imgidx + 2] <- c
+        imgidx <- imgidx + 1
 
     member this.clear_img() =
         imgidx <- 0

@@ -77,17 +77,17 @@ type Nes(path: string) =
             while true do
                 let imgflg = this.runNes
                 if true then
-                //     let rgbary = this.get_img_data
+                    let rgbary = this.get_img_data
                     this.clearImg
-                    // ()
-            //     // let mutable i = 0
-            //     // while i < 256*240-1 do
-            //     //     frameBuffer[i] <- (asUint32(rgbary[i], rgbary[i+1],rgbary[i+2]))
-            //     //     i <- i + 2
-            //     // SDL_UpdateTexture(texture, IntPtr.Zero, bufferPtr, width * 4) |> ignore
-            //     // SDL_RenderClear(renderer) |> ignore
-            //     // SDL_RenderCopy(renderer, texture, IntPtr.Zero, IntPtr.Zero) |> ignore
-            //     // SDL_RenderPresent(renderer) |> ignore
+                    ()
+                    // let mutable i = 0
+                    // while i < 256*240-1 do
+                    //     frameBuffer[i] <- (asUint32(rgbary[i], rgbary[i+1],rgbary[i+2]))
+                    //     i <- i + 2
+                    // SDL_UpdateTexture(texture, IntPtr.Zero, bufferPtr, width * 4) |> ignore
+                    // SDL_RenderClear(renderer) |> ignore
+                    // SDL_RenderCopy(renderer, texture, IntPtr.Zero, IntPtr.Zero) |> ignore
+                    // SDL_RenderPresent(renderer) |> ignore
 
                 frameRate<- frameRate+1
                 if (System.Environment.TickCount - lastTick) >= 1000 then
