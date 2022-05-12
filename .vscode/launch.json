@@ -5,11 +5,22 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": ".NET Core Launch (console)",
+            "name": ".NET Core Launch Debug",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
             "program": "${workspaceFolder}/src/winforms/bin/Debug/net6.0-windows/Winforms.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        },
+        {
+            "name": ".NET Core Launch Release",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "Release",
+            "program": "${workspaceFolder}/src/winforms/bin/Release/net6.0-windows/Winforms.dll",
             "args": [],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
