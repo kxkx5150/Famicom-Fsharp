@@ -19,8 +19,8 @@ let load m addr =
     | 0x0000 -> m.ram[addr &&& 0x7ff]
     | 0x2000 ->
         match addr with
-            // | 0x2002 -> int (m.mapper.ppu.read_ppu_status_reg (byte addr))
-            // | 0x2007 -> int (m.mapper.ppu.read_ppu_data_reg (byte addr))
+            | 0x2002 -> int (m.mapper.ppu.read_ppu_status_reg (byte addr))
+            | 0x2007 -> int (m.mapper.ppu.read_ppu_data_reg (byte addr))
             | _ -> 0
     | 0x4000 -> 0
     | 0x6000 -> 0
@@ -35,18 +35,18 @@ let store m addr data =
     | 0x0000 -> m.ram.[addr &&& 0x7FF] <- data
     | 0x2000 ->
         match (addr &&& 0x07) with
-            // | 0x00 -> m.mapper.ppu.write_ppu_ctrl0_reg (byte data)
-            // | 0x01 -> m.mapper.ppu.write_ppu_ctrl1_reg (byte data)
-            // | 0x02 -> ()
-            // | 0x03 -> m.mapper.ppu.write_sprite_addr_reg (byte data)
-            // | 0x04 -> m.mapper.ppu.write_sprite_data (byte data)
-            // | 0x05 -> m.mapper.ppu.write_scroll_reg (byte data)
-            // | 0x06 -> m.mapper.ppu.write_ppu_addr_reg (byte data)
-            // | 0x07 -> m.mapper.ppu.write_ppu_data_reg (byte data)
+            | 0x00 -> m.mapper.ppu.write_ppu_ctrl0_reg (byte data)
+            | 0x01 -> m.mapper.ppu.write_ppu_ctrl1_reg (byte data)
+            | 0x02 -> ()
+            | 0x03 -> m.mapper.ppu.write_sprite_addr_reg (byte data)
+            | 0x04 -> m.mapper.ppu.write_sprite_data (byte data)
+            | 0x05 -> m.mapper.ppu.write_scroll_reg (byte data)
+            | 0x06 -> m.mapper.ppu.write_ppu_addr_reg (byte data)
+            | 0x07 -> m.mapper.ppu.write_ppu_data_reg (byte data)
             | _ -> ()
     | 0x4000 ->
         match (addr) with
-            0x4014 -> m.dma.run (data, m.ram, m.mapper.ppu)
+            // 0x4014 -> m.dma.run (data, m.ram, m.mapper.ppu)
             | _ -> ()
     | 0x6000 -> ()
     | 0x8000 -> m.mapper.write (0, (addr &&& 0x1fff))

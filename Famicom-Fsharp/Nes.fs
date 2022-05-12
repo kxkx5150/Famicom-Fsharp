@@ -62,7 +62,7 @@ type Nes(path: string) =
             mem.dma.clear();
             cycles <- cycles + 514
 
-        // mem.mapper.ppu.run(cycles, irq)
+        mem.mapper.ppu.run(cycles, irq)
         // mem.mapper.ppu.get_img_status()
 
     member this.get_img_data =
@@ -75,10 +75,10 @@ type Nes(path: string) =
     member this.Loop renderer texture frameBuffer bufferPtr = 
         async {
             while true do
-                // let imgflg = this.runNes
-                // if imgflg then
+                let imgflg = this.runNes
+                if true then
                 //     let rgbary = this.get_img_data
-                //     this.clearImg
+                    this.clearImg
                     // ()
             //     // let mutable i = 0
             //     // while i < 256*240-1 do
