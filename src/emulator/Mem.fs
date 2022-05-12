@@ -46,7 +46,7 @@ let store m addr data =
         | _ -> ()
     | 0x4000 ->
         match (addr) with
-        | 0x4014 -> m.dma.run (data, m.ram, m.mapper.ppu)
+        // | 0x4014 -> m.dma.run (data, m.ram, m.mapper.ppu)
         | _ -> ()
     | 0x6000 -> ()
     | 0x8000 -> m.mapper.write (0, (addr &&& 0x1fff))
