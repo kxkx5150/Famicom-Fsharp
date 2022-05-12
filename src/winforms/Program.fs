@@ -22,9 +22,9 @@ let main argv =
     let form = new DoubleBufferForm()
     let SCREEN_WIDTH = 256
     let SCREEN_HEIGHT = 224
-    let SCALE = 1
+    let SCALE = 2
     let screenBuffer = Array.create (SCREEN_WIDTH * SCREEN_HEIGHT) 0
-    form.ClientSize <- new System.Drawing.Size(SCREEN_WIDTH, SCREEN_HEIGHT)
+    form.ClientSize <- new System.Drawing.Size(SCREEN_WIDTH*SCALE, SCREEN_HEIGHT*SCALE)
     let mutable drawflg = false
     let nes = new Nes("sm.nes")
     let mutable rgbarray: byte array = Array.zeroCreate<byte> (256 * 240 * 3)
