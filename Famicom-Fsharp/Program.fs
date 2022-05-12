@@ -5,6 +5,5 @@ open NES
 [<STAThread>]
 let main argv =
     let nes = new Nes("sm.nes")
-    nes.initNes
-    nes.loop
+    nes.start_loop
     0

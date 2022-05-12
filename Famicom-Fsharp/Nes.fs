@@ -45,6 +45,10 @@ type Nes(path: string) =
     let mutable lcpu = CPU.make false false mem
     let _ = mem.mapper.setRom path
     let asUint32 (r, g, b) = BitConverter.ToUInt32 (ReadOnlySpan [|b; g; r; 255uy|])
+    
+    let mutable lastTick = 0
+    let mutable frameRate = 0
+    let (width, height) = 256, 240
 
     member this.initNes = 
         let _ = CPU.init &lcpu
@@ -58,8 +62,8 @@ type Nes(path: string) =
             mem.dma.clear();
             cycles <- cycles + 514
 
-        mem.mapper.ppu.run(cycles, irq)
-        mem.mapper.ppu.get_img_status()
+        // mem.mapper.ppu.run(cycles, irq)
+        // mem.mapper.ppu.get_img_status()
 
     member this.get_img_data =
         mem.mapper.ppu.get_image_data()
@@ -67,11 +71,36 @@ type Nes(path: string) =
     member this.clearImg =
         mem.mapper.ppu.clear_img()
 
-    member this.loop =
-        let mutable lastTick = 0
-        let mutable frameRate = 0
-        let (width, height) = 256, 240
-        
+
+    member this.Loop renderer texture frameBuffer bufferPtr = 
+        async {
+            while true do
+                // let imgflg = this.runNes
+                // if imgflg then
+                //     let rgbary = this.get_img_data
+                //     this.clearImg
+                    // ()
+            //     // let mutable i = 0
+            //     // while i < 256*240-1 do
+            //     //     frameBuffer[i] <- (asUint32(rgbary[i], rgbary[i+1],rgbary[i+2]))
+            //     //     i <- i + 2
+            //     // SDL_UpdateTexture(texture, IntPtr.Zero, bufferPtr, width * 4) |> ignore
+            //     // SDL_RenderClear(renderer) |> ignore
+            //     // SDL_RenderCopy(renderer, texture, IntPtr.Zero, IntPtr.Zero) |> ignore
+            //     // SDL_RenderPresent(renderer) |> ignore
+
+                frameRate<- frameRate+1
+                if (System.Environment.TickCount - lastTick) >= 1000 then
+                    printfn "%d" frameRate
+                    frameRate <- 0
+                    lastTick <- System.Environment.TickCount
+                    ()
+        }
+
+
+
+
+    member this.start_loop =
         SDL_Init(SDL_INIT_VIDEO) |> ignore
         let mutable window, renderer = IntPtr.Zero, IntPtr.Zero
         let windowFlags = SDL_WindowFlags.SDL_WINDOW_SHOWN ||| SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS
@@ -81,27 +110,11 @@ type Nes(path: string) =
         let bufferPtr = IntPtr ((Marshal.UnsafeAddrOfPinnedArrayElement (frameBuffer, 0)).ToPointer ())
         let mutable keyEvent = Unchecked.defaultof<SDL_KeyboardEvent>
 
+        this.initNes
+        Async.Start(this.Loop renderer texture frameBuffer bufferPtr)
+
         let mutable brk = false
         while not brk do
-            let imgflg = this.runNes
-            if imgflg then
-                let rgbary = this.get_img_data
-                this.clearImg
-                let mutable i = 0
-                while i < 256*240-1 do
-                    frameBuffer[i] <- (asUint32(rgbary[i], rgbary[i+1],rgbary[i+2]))
-                    i <- i + 2
-                SDL_UpdateTexture(texture, IntPtr.Zero, bufferPtr, width * 4) |> ignore
-                SDL_RenderClear(renderer) |> ignore
-                SDL_RenderCopy(renderer, texture, IntPtr.Zero, IntPtr.Zero) |> ignore
-                SDL_RenderPresent(renderer) |> ignore
-
-            frameRate<- frameRate+1
-            if (System.Environment.TickCount - lastTick) >= 1000 then
-                printfn "%d" frameRate
-                frameRate <- 0
-                lastTick <- System.Environment.TickCount
-
             let evt = SDL_PollEvent(&keyEvent)
             if (keyEvent.``type`` = SDL_QUIT) then
                 brk <- true
@@ -113,3 +126,4 @@ type Nes(path: string) =
         SDL_DestroyWindow(window)
         SDL_Quit()
 
+        
