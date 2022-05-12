@@ -63,7 +63,7 @@ type Nes(path: string) =
             cycles <- cycles + 514
 
         mem.mapper.ppu.run(cycles, irq)
-        // mem.mapper.ppu.get_img_status()
+        mem.mapper.ppu.get_img_status()
 
     member this.get_img_data =
         mem.mapper.ppu.get_image_data()
@@ -72,29 +72,29 @@ type Nes(path: string) =
         mem.mapper.ppu.clear_img()
 
 
-    member this.Loop renderer texture frameBuffer bufferPtr = 
+    member this.Loop (renderer, texture, frameBuffer:uint32 array, bufferPtr) = 
         async {
             while true do
                 let imgflg = this.runNes
-                if true then
+                if imgflg then
                     let rgbary = this.get_img_data
                     this.clearImg
-                    ()
                     // let mutable i = 0
-                    // while i < 256*240-1 do
-                    //     frameBuffer[i] <- (asUint32(rgbary[i], rgbary[i+1],rgbary[i+2]))
-                    //     i <- i + 2
-                    // SDL_UpdateTexture(texture, IntPtr.Zero, bufferPtr, width * 4) |> ignore
-                    // SDL_RenderClear(renderer) |> ignore
-                    // SDL_RenderCopy(renderer, texture, IntPtr.Zero, IntPtr.Zero) |> ignore
-                    // SDL_RenderPresent(renderer) |> ignore
+                    // while i < 256*224-1 do
+                    //     let aaaa = asUint32(rgbary[i*3], rgbary[i*3+1],rgbary[i*3+2])
+                    //     frameBuffer.[i] <- aaaa
+                        // i <- i + 2
+
+                    SDL_UpdateTexture(texture, IntPtr.Zero, bufferPtr, width * 4) |> ignore
+                    SDL_RenderClear(renderer) |> ignore
+                    SDL_RenderCopy(renderer, texture, IntPtr.Zero, IntPtr.Zero) |> ignore
+                    SDL_RenderPresent(renderer) |> ignore
 
                 frameRate<- frameRate+1
                 if (System.Environment.TickCount - lastTick) >= 1000 then
                     printfn "%d" frameRate
                     frameRate <- 0
                     lastTick <- System.Environment.TickCount
-                    ()
         }
 
 
@@ -110,8 +110,11 @@ type Nes(path: string) =
         let bufferPtr = IntPtr ((Marshal.UnsafeAddrOfPinnedArrayElement (frameBuffer, 0)).ToPointer ())
         let mutable keyEvent = Unchecked.defaultof<SDL_KeyboardEvent>
 
+
+
+        frameBuffer[0] <- uint32 0
         this.initNes
-        Async.Start(this.Loop renderer texture frameBuffer bufferPtr)
+        Async.Start(this.Loop(renderer, texture, frameBuffer, bufferPtr))
 
         let mutable brk = false
         while not brk do
